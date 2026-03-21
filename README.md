@@ -1,0 +1,1 @@
+# sbom-quality-gate-platform
