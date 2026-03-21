@@ -1,9 +1,9 @@
-namespace SbomQualityGate.Application.UseCases;
-
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
+using SbomQualityGate.Domain.Enums;
 
-public class SubmitSbomHandler(ISbomRepository repository)
+namespace SbomQualityGate.Application.UseCases;
+public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository)
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
@@ -15,8 +15,6 @@ public class SubmitSbomHandler(ISbomRepository repository)
             Version = command.Version,
             SbomJson = command.SbomJson,
             UploadedAt = DateTime.UtcNow,
-
-            // leave these empty for now (we’ll parse later)
             SpecType = string.Empty,
             SpecVersion = string.Empty,
             ComponentCount = 0,
@@ -25,6 +23,17 @@ public class SubmitSbomHandler(ISbomRepository repository)
         };
 
         await repository.SaveAsync(sbom, cancellationToken);
+
+        var job = new ValidationJob
+        {
+            Id = Guid.NewGuid(),
+            SbomId = sbom.Id,
+            Status = ValidationJobStatus.Pending,
+            Profile = "NIS2-Default",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await jobRepository.CreateAsync(job, cancellationToken);
 
         return sbom.Id;
     }
