@@ -1,4 +1,4 @@
-namespace Domain.Enums;
+namespace SbomQualityGate.Domain.Enums;
 
 public enum ValidationStatus
 {

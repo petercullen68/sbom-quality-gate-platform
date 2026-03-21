@@ -1,4 +1,4 @@
-namespace Api;
+namespace SbomQualityGate.Api;
 
 public static class Program
 {

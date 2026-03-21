@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+namespace SbomQualityGate.Domain.Entities;
 
 public class Sbom
 {

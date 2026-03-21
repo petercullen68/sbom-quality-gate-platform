@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-Worker-51918052-30ef-41f3-ab0f-211dbefae07b</UserSecretsId>
+    <RootNamespace>SbomQualityGate.Worker</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

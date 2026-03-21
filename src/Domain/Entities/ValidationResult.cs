@@ -1,6 +1,6 @@
-using Domain.Enums;
+using SbomQualityGate.Domain.Enums;
 
-namespace Domain.Entities;
+namespace SbomQualityGate.Domain.Entities;
 
 public class ValidationResult
 {

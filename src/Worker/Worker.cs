@@ -1,4 +1,4 @@
-namespace Worker;
+namespace SbomQualityGate.Worker;
 
 public class Worker(ILogger<Worker> logger) : BackgroundService
 {
