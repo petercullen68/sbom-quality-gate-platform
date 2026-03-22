@@ -3,6 +3,7 @@ using SbomQualityGate.Domain.Entities;
 using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Application.UseCases;
+
 public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository)
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
@@ -18,8 +19,6 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
             SpecType = string.Empty,
             SpecVersion = string.Empty,
             ComponentCount = 0,
-            HasSupplier = false,
-            HasLicenses = false
         };
 
         await repository.SaveAsync(sbom, cancellationToken);
@@ -27,7 +26,7 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
         var job = new ValidationJob
         {
             Id = Guid.NewGuid(),
-            SbomId = sbom.Id,
+            SbomId = sbom.Id, 
             Status = ValidationJobStatus.Pending,
             Profile = "NIS2-Default",
             CreatedAt = DateTime.UtcNow

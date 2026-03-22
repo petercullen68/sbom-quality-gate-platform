@@ -1,8 +1,8 @@
-namespace SbomQualityGate.Application.Interfaces;
-
 using SbomQualityGate.Domain.Entities;
+
+namespace SbomQualityGate.Application.Interfaces;
 
 public interface IValidationResultRepository
 {
-    Task SaveAsync(ValidationResult result, CancellationToken cancellationToken);
+    Task AddAsync(ValidationResult result, CancellationToken cancellationToken);
 }

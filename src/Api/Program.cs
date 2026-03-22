@@ -1,28 +1,35 @@
+using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Controllers
 builder.Services.AddControllers();
 
-// Swagger (handy for testing)
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Dependency Injection
-builder.Services.AddSingleton<ISbomRepository, InMemorySbomRepository>();
-builder.Services.AddScoped<SubmitSbomHandler>();
-
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new() { Title = "SBOM Quality Gate API", Version = "v1" });
 });
 
+// DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
+// Repositories
+builder.Services.AddScoped<ISbomRepository, SbomRepository>();
+builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
+builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
+
+// Use cases
+builder.Services.AddScoped<SubmitSbomHandler>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -1,20 +1,20 @@
-namespace SbomQualityGate.Domain.Entities;
-
 using SbomQualityGate.Domain.Enums;
+
+namespace SbomQualityGate.Domain.Entities;
 
 public class ValidationJob
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid SbomId { get; set; }
+    public Guid SbomId { get; init; }
 
     public ValidationJobStatus Status { get; set; }
 
-    public string Profile { get; set; } = string.Empty;
+    public string Profile { get; init; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; init; }
 
-    public DateTime? StartedAt { get; set; }
+    public DateTime? StartedAt { get; init; }
 
     public DateTime? CompletedAt { get; set; }
 }
