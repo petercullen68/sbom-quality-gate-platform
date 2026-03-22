@@ -6,7 +6,6 @@
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions"  />
   </ItemGroup>
 </Project>

@@ -1,0 +1,23 @@
+root = true
+
+# C# defaults (optional but common)
+[*.cs]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+# EF Core migration files
+[src/Infrastructure/Migrations/*.cs]
+generated_code = true
+
+# If you ever nest folders under Migrations
+[src/Infrastructure/Migrations/**/*.cs]
+generated_code = true
+
+# Optional: force-disable analyzer diagnostics only in migrations
+# Uncomment if generated_code alone is not enough in your tooling.
+# [src/Infrastructure/Migrations/*.cs]
+# dotnet_analyzer_diagnostic.severity = none
+#
+# [src/Infrastructure/Migrations/**/*.cs]
+# dotnet_analyzer_diagnostic.severity = none
