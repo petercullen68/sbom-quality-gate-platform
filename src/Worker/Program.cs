@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
+using SbomQualityGate.Infrastructure.Validation;
 using SbomQualityGate.Worker;
 using SbomQualityGate.Worker.Services;
 
@@ -28,6 +29,8 @@ builder.Services.AddScoped<IValidationResultRepository, ValidationResultReposito
 
 // Use case
 builder.Services.AddScoped<ProcessNextValidationJobHandler>();
+
+builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
 // Worker
 builder.Services.AddHostedService<Worker>();

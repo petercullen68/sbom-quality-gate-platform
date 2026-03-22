@@ -11,4 +11,10 @@ public class SbomRepository(AppDbContext context) : ISbomRepository
         context.Sboms.Add(sbom);
         await context.SaveChangesAsync(cancellationToken);
     }
+    
+    public async Task<Sbom?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await context.Sboms
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 }

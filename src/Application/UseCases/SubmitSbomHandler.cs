@@ -4,7 +4,7 @@ using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Application.UseCases;
 
-public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository)
+public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository) : ISubmitSbomHandler
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
@@ -14,6 +14,9 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
             Team = command.Team,
             Project = command.Project,
             Version = command.Version,
+            // SBOM JSON is stored as-is and not parsed at submission time.
+            // Parsing and validation are intentionally deferred to the validation pipeline (worker)
+            // to keep ingestion fast, avoid blocking API calls, and allow validation logic to evolve independently.
             SbomJson = command.SbomJson,
             UploadedAt = DateTime.UtcNow,
             SpecType = string.Empty,

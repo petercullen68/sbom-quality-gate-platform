@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
+using SbomQualityGate.Infrastructure.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,8 +25,11 @@ builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
 
-// Use cases
-builder.Services.AddScoped<SubmitSbomHandler>();
+// Validation tool
+builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
+
+// Handler
+builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
 
 var app = builder.Build();
 
