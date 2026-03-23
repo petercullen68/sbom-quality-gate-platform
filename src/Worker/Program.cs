@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
+using SbomQualityGate.Infrastructure.Process;
 using SbomQualityGate.Infrastructure.Validation;
 using SbomQualityGate.Worker;
 using SbomQualityGate.Worker.Services;
@@ -63,7 +64,7 @@ builder.Services.AddScoped<IValidationResultRepository, ValidationResultReposito
 // Infrastructure (External Tools)
 // ------------------------------
 //
-
+builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
 builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
 //

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
@@ -7,7 +6,7 @@ using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Infrastructure.Validation;
 
-public class SbomQsValidationTool : IValidationTool
+public class SbomQsValidationTool(IProcessRunner processRunner) : IValidationTool
 {
     private int _failureCount;
     private DateTime _blockedUntil = DateTime.MinValue;
@@ -27,48 +26,17 @@ public class SbomQsValidationTool : IValidationTool
 
         try
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "sbomqs",
-                Arguments = $"score {tempFile} --json",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            // 🔥 replaced all Process code with abstraction
+            var (exitCode, output, error) = await processRunner.RunAsync(
+                "sbomqs",
+                $"score {tempFile} --json",
+                cancellationToken);
 
-            using var process = new Process();
-            process.StartInfo = psi;
-
-            process.Start();
-
-            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-            var waitForExitTask = process.WaitForExitAsync(cancellationToken);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-
-            var completed = await Task.WhenAny(waitForExitTask, timeoutTask);
-
-            if (completed != waitForExitTask)
-            {
-                try { process.Kill(true); }
-                catch
-                {
-                    // ignored
-                }
-
-                throw new TimeoutException("sbomqs execution timed out");
-            }
-
-            var output = await outputTask;
-            var error = await errorTask;
-
-            if (process.ExitCode != 0)
+            if (exitCode != 0)
             {
                 throw new ValidationToolException(
                     $"SBOMQS execution failed: {error}",
-                    process.ExitCode);
+                    exitCode);
             }
 
             if (string.IsNullOrWhiteSpace(output))
@@ -106,7 +74,7 @@ public class SbomQsValidationTool : IValidationTool
         }
         catch (Exception)
         {
-            // ✅ track failures
+            // ✅ circuit breaker logic unchanged
             _failureCount++;
 
             if (_failureCount >= 5)
