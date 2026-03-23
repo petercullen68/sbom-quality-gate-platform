@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
@@ -5,6 +6,7 @@ using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Validation;
 using SbomQualityGate.Worker;
 using SbomQualityGate.Worker.Services;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -15,6 +17,25 @@ var builder = Host.CreateApplicationBuilder(args);
 //
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
+
+
+//
+// ------------------------------
+// Logging - Serilog
+// ------------------------------
+//
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.File(
+        "logs/app-.log",
+        rollingInterval: RollingInterval.Day,
+        formatProvider: CultureInfo.InvariantCulture)
+    .CreateLogger();
+
+
+builder.Services.AddSerilog();
 
 //
 // ------------------------------
@@ -78,4 +99,15 @@ builder.Services.AddHostedService<Worker>();
 //
 
 var host = builder.Build();
-host.Run();
+try
+{
+    host.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Worker host terminated unexpectedly.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

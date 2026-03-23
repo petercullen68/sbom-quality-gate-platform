@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Api.Configuration;
@@ -5,6 +6,7 @@ using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Validation;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Configuration
 // ------------------------------
 //
+
+var connectionString = builder.Configuration.GetConnectionString("Default");
 
 // Bind and validate upload settings once at startup.
 builder.Services
@@ -25,13 +29,29 @@ var uploadOptions = builder.Configuration
     .GetSection(UploadOptions.SectionName)
     .Get<UploadOptions>() ?? new UploadOptions();
 
-//
-// ------------------------------
-// Request Limits / Upload Config
-// ------------------------------
-//
 
-// Global upload/request body limits
+//
+// ------------------------------
+// Logging
+// ------------------------------
+//
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.File(
+        "logs/app-.log",
+        rollingInterval: RollingInterval.Day,
+        formatProvider: CultureInfo.InvariantCulture)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+//
+// ------------------------------
+// // Global upload/request body limits
+// ------------------------------
+//
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = uploadOptions.MaxUploadBytes;
@@ -48,7 +68,7 @@ builder.WebHost.ConfigureKestrel(options =>
 // ------------------------------
 //
 
-var connectionString = builder.Configuration.GetConnectionString("Default");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -111,8 +131,21 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseSerilogRequestLogging();
+
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "API host terminated unexpectedly.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
