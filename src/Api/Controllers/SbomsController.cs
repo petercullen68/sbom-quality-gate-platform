@@ -81,9 +81,6 @@ public class SbomsController(
     
         return await SubmitInternalAsync(command, cancellationToken);
     }
-    
-    
-    
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(SbomResponse), StatusCodes.Status200OK)]

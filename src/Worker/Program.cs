@@ -8,32 +8,74 @@ using SbomQualityGate.Worker.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// DbContext
+//
+// ------------------------------
+// Configuration
+// ------------------------------
+//
+
+var connectionString = builder.Configuration.GetConnectionString("Default");
+
+//
+// ------------------------------
+// Database
+// ------------------------------
+//
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(connectionString));
 
-builder.Services.AddSingleton<JobProcessor>();
+//
+// ------------------------------
+// Infrastructure (Persistence)
+// ------------------------------
+//
 
-builder.Services.AddSingleton<PostgresNotificationListener>(sp =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    var conn = config.GetConnectionString("Default");
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-    return new PostgresNotificationListener(conn!);
-});
-
-// Repositories
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
 
-// Use case
-builder.Services.AddScoped<ProcessNextValidationJobHandler>();
+//
+// ------------------------------
+// Infrastructure (External Tools)
+// ------------------------------
+//
 
 builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
-// Worker
+//
+// ------------------------------
+// Application (Use Cases)
+// ------------------------------
+//
+
+builder.Services.AddScoped<ProcessNextValidationJobHandler>();
+
+//
+// ------------------------------
+// Worker Services (Long-lived)
+// ------------------------------
+//
+
+builder.Services.AddSingleton<JobProcessor>();
+
+builder.Services.AddSingleton<PostgresNotificationListener>(sp => new PostgresNotificationListener(connectionString!));
+
+//
+// ------------------------------
+// Hosted Worker
+// ------------------------------
+//
+
 builder.Services.AddHostedService<Worker>();
+
+//
+// ------------------------------
+// Build & Run
+// ------------------------------
+//
 
 var host = builder.Build();
 host.Run();

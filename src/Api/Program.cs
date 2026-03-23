@@ -8,6 +8,12 @@ using SbomQualityGate.Infrastructure.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//
+// ------------------------------
+// Configuration
+// ------------------------------
+//
+
 // Bind and validate upload settings once at startup.
 builder.Services
     .AddOptions<UploadOptions>()
@@ -19,7 +25,13 @@ var uploadOptions = builder.Configuration
     .GetSection(UploadOptions.SectionName)
     .Get<UploadOptions>() ?? new UploadOptions();
 
-// Global upload/request body limits (cross-platform).
+//
+// ------------------------------
+// Request Limits / Upload Config
+// ------------------------------
+//
+
+// Global upload/request body limits
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = uploadOptions.MaxUploadBytes;
@@ -30,34 +42,66 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = uploadOptions.MaxUploadBytes;
 });
 
-// Controllers
+//
+// ------------------------------
+// Database
+// ------------------------------
+//
+
+var connectionString = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+//
+// ------------------------------
+// Infrastructure (Persistence)
+// ------------------------------
+//
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<ISbomRepository, SbomRepository>();
+builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
+builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
+
+//
+// ------------------------------
+// Infrastructure (External Tools)
+// ------------------------------
+//
+
+builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
+
+//
+// ------------------------------
+// Application (Use Cases)
+// ------------------------------
+//
+
+builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
+
+//
+// ------------------------------
+// API Layer
+// ------------------------------
+//
+
 builder.Services.AddControllers();
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new() { Title = "SBOM Quality Gate API", Version = "v1" });
 });
 
-// DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-
-// Repositories
-builder.Services.AddScoped<ISbomRepository, SbomRepository>();
-builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
-builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
-
-// Validation tool
-builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
-
-// Handler
-builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
-
 var app = builder.Build();
 
-// Middleware
+//
+// ------------------------------
+// Middleware Pipeline
+// ------------------------------
+//
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

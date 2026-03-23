@@ -7,7 +7,8 @@ namespace SbomQualityGate.Application.UseCases;
 public class ProcessNextValidationJobHandler(
     IValidationJobRepository jobRepository,
     IValidationTool validationTool,
-    ISbomRepository sbomRepository) 
+    ISbomRepository sbomRepository, 
+    IUnitOfWork unitOfWork) 
 {
     public async Task<bool> HandleAsync(CancellationToken cancellationToken)
     {
@@ -37,7 +38,11 @@ public class ProcessNextValidationJobHandler(
                 CreatedAt = DateTime.UtcNow
             };
 
-            await jobRepository.CompleteJobAsync(job, result, cancellationToken);
+            await unitOfWork.ExecuteAsync(async () =>
+            {
+                await jobRepository.CompleteJobAsync(job, result, cancellationToken);
+
+            }, cancellationToken);
 
             return true;
         }

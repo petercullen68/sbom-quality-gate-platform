@@ -1,41 +1,105 @@
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
 using SbomQualityGate.Domain.Enums;
+using System.Text.Json;
 
 namespace SbomQualityGate.Application.UseCases;
 
-public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository) : ISubmitSbomHandler
+public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository, IUnitOfWork unitOfWork) : ISubmitSbomHandler
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(command, nameof(command));
+        var specType = string.Empty;
+        var specVersion = string.Empty;
+        var componentCount = 0;
+        try
+        {
+            using var doc = JsonDocument.Parse(command.SbomJson);
+            var root = doc.RootElement;
+
+            // Detect CycloneDX
+            if (root.TryGetProperty("bomFormat", out var bomFormatProp))
+            {
+                specType = bomFormatProp.GetString();
+
+                if (root.TryGetProperty("specVersion", out var specVersionProp))
+                {
+                    specVersion = specVersionProp.GetString() ?? string.Empty;
+                }
+
+                if (root.TryGetProperty("components", out var componentsProp) &&
+                    componentsProp.ValueKind == JsonValueKind.Array)
+                {
+                    componentCount = componentsProp.GetArrayLength();
+                }
+            }
+            // Detect SPDX
+            else if (root.TryGetProperty("spdxVersion", out var spdxVersionProp))
+            {
+                specType = "SPDX";
+                specVersion = spdxVersionProp.GetString() ?? string.Empty;
+
+                if (root.TryGetProperty("packages", out var packagesProp) &&
+                    packagesProp.ValueKind == JsonValueKind.Array)
+                {
+                    componentCount = packagesProp.GetArrayLength();
+                }
+            }
+        }
+        catch (JsonException ex)
+        {
+            throw new ArgumentException(
+                "command.SbomJson contains invalid JSON.",
+                nameof(command),
+                ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ArgumentException(
+                "command.SbomJson has an invalid structure.",
+                nameof(command),
+                ex);
+        }
+
+        if (string.IsNullOrEmpty(specType) || (specType != "CycloneDX" && specType != "SPDX"))
+        {
+            throw new ArgumentException(
+                "command.SbomJson must be a valid CycloneDX or SPDX document.",
+                nameof(command));
+        }
+        
         var sbom = new Sbom
         {
             Id = Guid.NewGuid(),
             Team = command.Team,
             Project = command.Project,
             Version = command.Version,
-            // SBOM JSON is stored as-is and not parsed at submission time.
-            // Parsing and validation are intentionally deferred to the validation pipeline (worker)
-            // to keep ingestion fast, avoid blocking API calls, and allow validation logic to evolve independently.
             SbomJson = command.SbomJson,
             UploadedAt = DateTime.UtcNow,
-            SpecType = string.Empty,
-            SpecVersion = string.Empty,
-            ComponentCount = 0,
+            SpecType = specType,
+            SpecVersion = specVersion,
+            ComponentCount = componentCount,
         };
 
-        await repository.SaveAsync(sbom, cancellationToken);
-
-        var job = new ValidationJob
+        await unitOfWork.ExecuteAsync(async () =>
         {
-            Id = Guid.NewGuid(),
-            SbomId = sbom.Id, 
-            Status = ValidationJobStatus.Pending,
-            Profile = "NIS2-Default",
-            CreatedAt = DateTime.UtcNow
-        };
+            await repository.AddAsync(sbom, cancellationToken);
+            
+            var job = new ValidationJob
+            {
+                Id = Guid.NewGuid(),
+                SbomId = sbom.Id, 
+                Status = ValidationJobStatus.Pending,
+                Profile = "NIS2-Default",
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await jobRepository.CreateAsync(job, cancellationToken);
+            
+            await jobRepository.AddAsync(job, cancellationToken);
+        }, cancellationToken, true);
+        
+
 
         return sbom.Id;
     }

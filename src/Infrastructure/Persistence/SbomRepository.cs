@@ -6,10 +6,10 @@ namespace SbomQualityGate.Infrastructure.Persistence;
 
 public class SbomRepository(AppDbContext context) : ISbomRepository
 {
-    public async Task SaveAsync(Sbom sbom, CancellationToken cancellationToken)
+    public Task AddAsync(Sbom sbom, CancellationToken cancellationToken)
     {
         context.Sboms.Add(sbom);
-        await context.SaveChangesAsync(cancellationToken);
+        return Task.CompletedTask;
     }
     
     public async Task<Sbom?> GetByIdAsync(Guid id, CancellationToken cancellationToken)

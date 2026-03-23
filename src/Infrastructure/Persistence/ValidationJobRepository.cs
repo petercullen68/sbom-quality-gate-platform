@@ -8,21 +8,10 @@ namespace SbomQualityGate.Infrastructure.Persistence;
 
 public class ValidationJobRepository(AppDbContext context) : IValidationJobRepository
 {
-    public async Task CreateAsync(ValidationJob job, CancellationToken cancellationToken)
+    public Task AddAsync(ValidationJob job, CancellationToken cancellationToken)
     {
         context.ValidationJobs.Add(job);
-        await context.SaveChangesAsync(cancellationToken);
-
-        // Send notification safely
-        var conn = context.Database.GetDbConnection();
-
-        if (conn.State != ConnectionState.Open)
-            await conn.OpenAsync(cancellationToken);
-
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"NOTIFY validation_jobs, '{job.Id}'";
-
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 
     public async Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
@@ -51,20 +40,12 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         return results.FirstOrDefault();
     }
-
-    public async Task UpdateAsync(ValidationJob job, CancellationToken cancellationToken)
-    {
-        context.ValidationJobs.Update(job);
-        await context.SaveChangesAsync(cancellationToken);
-    }
     
-    public async Task CompleteJobAsync(
+    public Task CompleteJobAsync(
         ValidationJob job,
         ValidationResult result,
         CancellationToken cancellationToken)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
         context.ValidationResults.Add(result);
 
         job.Status = result.Status == ValidationStatus.Pass
@@ -75,8 +56,6 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         context.ValidationJobs.Update(job);
 
-        await context.SaveChangesAsync(cancellationToken);
-
-        await transaction.CommitAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 }
