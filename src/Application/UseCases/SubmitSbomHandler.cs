@@ -1,7 +1,7 @@
+using System.Text.Json;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
 using SbomQualityGate.Domain.Enums;
-using System.Text.Json;
 
 namespace SbomQualityGate.Application.UseCases;
 

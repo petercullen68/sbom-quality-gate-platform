@@ -19,7 +19,7 @@ public class Worker(
             LogLevel.Information,
             new EventId(2, nameof(Worker)),
             "Notification received - processing jobs");
-    
+
     private static readonly Action<ILogger, Exception?> FallbackTriggered =
         LoggerMessage.Define(
             LogLevel.Information,
@@ -31,19 +31,20 @@ public class Worker(
             LogLevel.Information,
             new EventId(4, nameof(Worker)),
             "Worker shutting down");
-    
+
     private static readonly Action<ILogger, Exception?> WorkerError =
         LoggerMessage.Define(
             LogLevel.Error,
             new EventId(5, nameof(Worker)),
             "Error in worker loop");
 
-    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await listener.StartAsync(stoppingToken);
 
-        WorkerStarted(logger, null);;
+        WorkerStarted(logger, null);
+
+        var backoff = TimeSpan.FromSeconds(2);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -57,16 +58,21 @@ public class Worker(
 
                 if (completed == channelWaitTask && await channelWaitTask)
                 {
+                    // drain channel
                     while (listener.Reader.TryRead(out _)) { }
 
                     NotificationReceived(logger, null);
-                    await processor.ProcessAsync(stoppingToken);
                 }
                 else if (completed == delayTask)
                 {
                     FallbackTriggered(logger, null);
-                    await processor.ProcessAsync(stoppingToken);
                 }
+
+                // 🔥 Single call — JobProcessor handles draining internally
+                await processor.ProcessAsync(stoppingToken);
+
+                // reset backoff after successful cycle
+                backoff = TimeSpan.FromSeconds(2);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -75,7 +81,11 @@ public class Worker(
             catch (Exception ex)
             {
                 WorkerError(logger, ex);
-                await Task.Delay(5000, stoppingToken);
+
+                await Task.Delay(backoff, stoppingToken);
+
+                backoff = TimeSpan.FromSeconds(
+                    Math.Min(backoff.TotalSeconds * 2, 30));
             }
         }
     }

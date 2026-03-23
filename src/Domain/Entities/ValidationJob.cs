@@ -17,4 +17,8 @@ public class ValidationJob
     public DateTime? StartedAt { get; init; }
 
     public DateTime? CompletedAt { get; set; }
+    
+    public int RetryCount { get; set; }
+    
+    public string? FailureReason { get; set; }
 }

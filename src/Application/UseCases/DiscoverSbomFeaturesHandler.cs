@@ -96,6 +96,10 @@ public class DiscoverSbomFeaturesHandler(
 
     private static bool TryGetComprehensive(JsonElement file, out JsonElement result)
     {
+        // NOTE:
+        // SBOMQS currently outputs "comprehenssive" (typo).
+        // We support both spellings to avoid breaking ingestion
+        // if/when the tool fixes this in future versions.
         // handle misspelling
         if (file.TryGetProperty("comprehenssive", out result) &&
             result.ValueKind == JsonValueKind.Array)

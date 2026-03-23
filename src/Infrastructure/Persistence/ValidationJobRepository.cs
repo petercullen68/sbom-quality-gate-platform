@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
@@ -14,6 +13,30 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
         return Task.CompletedTask;
     }
 
+    public Task FailJobAsync(
+        ValidationJob job,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        job.RetryCount++;
+
+        if (job.RetryCount >= 3)
+        {
+            job.Status = ValidationJobStatus.Failed;
+            job.CompletedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            job.Status = ValidationJobStatus.Pending; // retry
+        }
+
+        job.FailureReason = reason;
+
+        context.ValidationJobs.Update(job);
+
+        return Task.CompletedTask;
+    }
+    
     public async Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
     {
         var sql = """
