@@ -82,15 +82,6 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISbomFeatureRepository, SbomFeatureRepository>();
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
-builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
-
-//
-// ------------------------------
-// Infrastructure (External Tools)
-// ------------------------------
-//
-
-builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
 //
 // ------------------------------
