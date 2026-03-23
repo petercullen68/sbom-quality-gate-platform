@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Sbom> Sboms => Set<Sbom>();
     public DbSet<ValidationJob> ValidationJobs => Set<ValidationJob>();
     public DbSet<ValidationResult> ValidationResults => Set<ValidationResult>();
+    public DbSet<SbomFeature> SbomFeatures => Set<SbomFeature>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +42,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(x => x.ValidationJobId)
                 .IsUnique();
+        });
+        
+        modelBuilder.Entity<SbomFeature>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.Feature)
+                .IsUnique();
+
+            entity.Property(x => x.Feature).IsRequired();
+            entity.Property(x => x.Category).IsRequired();
         });
     }
 }
