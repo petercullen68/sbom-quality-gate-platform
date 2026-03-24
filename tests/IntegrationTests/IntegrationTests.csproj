@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <RootNamespace>SbomQualityGate.IntegrationTests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector"  />
+        <PackageReference Include="Microsoft.NET.Test.Sdk"  />
+        <PackageReference Include="xunit"  />
+        <PackageReference Include="xunit.runner.visualstudio"  />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Application\Application.csproj" />
+      <ProjectReference Include="..\..\src\Infrastructure\Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Persistence\" />
+      <Folder Include="Worker\" />
+    </ItemGroup>
+
+</Project>

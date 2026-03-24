@@ -58,6 +58,7 @@ public class ProcessNextValidationJobHandler(
                     job,
                     ex.Message,
                     cancellationToken);
+                return false;
             }
             return true;
         }, cancellationToken);
