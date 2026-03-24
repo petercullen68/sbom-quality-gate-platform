@@ -93,26 +93,71 @@ public class ProcessNextValidationJobHandlerTests
             }
         };
 
-        var sbomRepo = new FakeSbomRepositoryWithData();
-
         var validationTool = new FakeValidationTool
         {
             ShouldThrow = true
         };
-
-        var unitOfWork = new FakeUnitOfWork();
-
-        var handler = new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
-
+        
+        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: null, validationTool: validationTool);
+        
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
 
         // Assert
         Assert.False(result);
+    }
+    
+    [Fact]
+    public async Task HandleAsyncCompleteJobFailsAndDoesNotReportSuccess()
+    {
+        // Arrange
+        var sbom = new Sbom
+        {
+            Id = Guid.NewGuid(),
+            SbomJson = "{}"
+        };
+
+        var job = new ValidationJob
+        {
+            Id = Guid.NewGuid(),
+            SbomId = sbom.Id,
+            Status = ValidationJobStatus.Pending
+        };
+
+        var sbomRepo = new FakeSbomRepository
+        {
+            GetByIdFunc = _ => sbom
+        };
+
+        var jobRepo = new FailingCompleteValidationJobRepository
+        {
+            JobToReturn = job
+        };
+
+        var validationTool = new FakeValidationTool
+        {
+            ResultToReturn = new ValidationToolResult
+            {
+                Status = ValidationStatus.Pass,
+                Score = 90,
+                ReportJson = "{}"
+            }
+        };
+
+        var unitOfWork = new FakeUnitOfWork();
+
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: sbomRepo,
+            validationTool: validationTool,
+            unitOfWork: unitOfWork);
+
+        // Act + Assert
+        var result = await handler.HandleAsync(CancellationToken.None);
+
+        // 🔥 transaction was attempted
+        Assert.False(result);
+        Assert.True(unitOfWork.Executed);
     }
     
     [Fact]
