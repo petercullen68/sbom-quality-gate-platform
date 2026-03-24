@@ -15,13 +15,12 @@ public class PostgresNotificationListener(string connectionString) : IDisposable
     
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        await StopAsync();
+        
         _connection = new NpgsqlConnection(connectionString);
         await _connection.OpenAsync(cancellationToken);
 
-        _connection.Notification += (_, _) =>
-        {
-            _channel.Writer.TryWrite(true);
-        };
+        _connection.Notification += OnNotification;
 
         await using var cmd = new NpgsqlCommand("LISTEN validation_jobs;", _connection);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
@@ -38,6 +37,32 @@ public class PostgresNotificationListener(string connectionString) : IDisposable
         }
 
         return _waitTask;
+    }
+    
+    public async Task StopAsync()
+    {
+        if (_connection != null)
+        {
+            try
+            {
+                _connection.Notification -= OnNotification;
+                await _connection.CloseAsync();
+                await _connection.DisposeAsync();
+            }
+            catch
+            {
+                // ignored
+            }
+            finally
+            {
+                _connection = null;
+            }
+        }
+    }
+    
+    private void OnNotification(object? sender, NpgsqlNotificationEventArgs e)
+    {
+        _channel.Writer.TryWrite(true);
     }
 
     public void Dispose()
