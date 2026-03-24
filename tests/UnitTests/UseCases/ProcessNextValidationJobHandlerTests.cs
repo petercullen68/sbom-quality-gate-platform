@@ -1,3 +1,4 @@
+using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.Models;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Domain.Entities;
@@ -8,28 +9,6 @@ namespace SbomQualityGate.UnitTests.UseCases;
 
 public class ProcessNextValidationJobHandlerTests
 {
-    [Fact]
-    public async Task HandleAsyncNoJobsReturnsFalse()
-    {
-        // Arrange
-        var jobRepo = new FakeValidationJobRepository();
-        var sbomRepo = new FakeSbomRepository();
-        var validationTool = new FakeValidationTool();
-        var unitOfWork = new FakeUnitOfWork();
-
-        var handler = new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
-
-        // Act
-        var result = await handler.HandleAsync(CancellationToken.None);
-
-        // Assert
-        Assert.False(result);
-    }
-    
     [Fact]
     public async Task HandleAsyncJobExistsButSbomMissingReturnsFalse()
     {
@@ -43,16 +22,26 @@ public class ProcessNextValidationJobHandlerTests
                 Status = ValidationJobStatus.Pending
             }
         };
+        
+        var handler = CreateHandler(jobRepo: jobRepo);
 
-        var sbomRepo = new FakeSbomRepository(); // returns null
-        var validationTool = new FakeValidationTool();
-        var unitOfWork = new FakeUnitOfWork();
+        // Act
+        var result = await handler.HandleAsync(CancellationToken.None);
 
-        var handler = new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
+        // Assert
+        Assert.False(result);
+    }
+    
+    [Fact]
+    public async Task HandleAsyncNoJobsReturnsFalse()
+    {
+        // Arrange
+        var jobRepo = new FakeValidationJobRepository
+        {
+            JobToReturn = null
+        };
+
+        var handler = CreateHandler(jobRepo: jobRepo);
 
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
@@ -75,17 +64,11 @@ public class ProcessNextValidationJobHandlerTests
             }
         };
 
-        var sbomRepo = new FakeSbomRepositoryWithData(); // returns valid SBOM
-
         var validationTool = new FakeValidationTool();
-
-        var unitOfWork = new FakeUnitOfWork();
-
-        var handler = new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
+        
+        var fakeSbomRepoWithData = new FakeSbomRepositoryWithData();
+        
+        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: fakeSbomRepoWithData,validationTool: validationTool);
 
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
@@ -97,7 +80,7 @@ public class ProcessNextValidationJobHandlerTests
     }
     
     [Fact]
-    public async Task HandleAsyncValidationToolThrowsReturnsFalse()
+    public async Task HandleAsyncValidationToolReturnsFalse()
     {
         // Arrange
         var jobRepo = new FakeValidationJobRepository
@@ -145,9 +128,7 @@ public class ProcessNextValidationJobHandlerTests
                 Status = ValidationJobStatus.Pending
             }
         };
-
-        var sbomRepo = new FakeSbomRepositoryWithData();
-
+        
         var validationTool = new FakeValidationTool
         {
             ResultToReturn = new ValidationToolResult
@@ -157,14 +138,10 @@ public class ProcessNextValidationJobHandlerTests
                 ReportJson = "{}"
             }
         };
-
-        var unitOfWork = new FakeUnitOfWork();
-
-        var handler = new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
+        
+        var fakeSbomRepoWithData = new FakeSbomRepositoryWithData();
+        
+        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: fakeSbomRepoWithData, validationTool: validationTool);
 
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
@@ -172,5 +149,23 @@ public class ProcessNextValidationJobHandlerTests
         // Assert
         Assert.True(result); // important: processed successfully, even if failed
         Assert.True(jobRepo.CompleteCalled);
+    }
+    
+    private static ProcessNextValidationJobHandler CreateHandler(
+        IValidationJobRepository? jobRepo = null,
+        ISbomRepository? sbomRepo = null,
+        IValidationTool? validationTool = null,
+        IUnitOfWork? unitOfWork = null)
+    {
+        jobRepo ??= new FakeValidationJobRepository();
+        sbomRepo ??= new FakeSbomRepository();
+        validationTool ??= new FakeValidationTool();
+        unitOfWork ??= new FakeUnitOfWork();
+
+        return new ProcessNextValidationJobHandler(
+            jobRepo,
+            validationTool,
+            sbomRepo,
+            unitOfWork);
     }
 }
