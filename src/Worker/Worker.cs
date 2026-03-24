@@ -82,8 +82,30 @@ public class Worker(
             {
                 WorkerError(logger, ex);
 
+                // 🔥 tear down broken connection
+                try
+                {
+                    await listener.StopAsync();
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                // backoff before retry
                 await Task.Delay(backoff, stoppingToken);
 
+                // 🔥 recreate listener (new connection + LISTEN)
+                try
+                {
+                    await listener.StartAsync(stoppingToken);
+                }
+                catch (Exception startEx)
+                {
+                    WorkerError(logger, startEx);
+                }
+
+                // exponential backoff (max 30s)
                 backoff = TimeSpan.FromSeconds(
                     Math.Min(backoff.TotalSeconds * 2, 30));
             }
