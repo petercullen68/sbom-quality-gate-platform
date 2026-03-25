@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.UseCases;
 
 namespace SbomQualityGate.Api.Controllers;
@@ -22,9 +23,10 @@ public class FeaturesController(
 
             return Ok();
         }
-        catch (InvalidOperationException ex)
+        catch (RequestValidationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            ModelState.AddModelError("report", ex.Message);
+            return ValidationProblem(ModelState);
         }
     }
 }

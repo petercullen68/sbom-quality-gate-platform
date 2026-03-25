@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
 using SbomQualityGate.Domain.Enums;
@@ -47,28 +48,21 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
                 }
             }
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
-            throw new ArgumentException(
-                "command.SbomJson contains invalid JSON.",
-                nameof(command),
-                ex);
+            throw new RequestValidationException("command.SbomJson contains invalid JSON.");
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            throw new ArgumentException(
-                "command.SbomJson has an invalid structure.",
-                nameof(command),
-                ex);
+            throw new RequestValidationException("command.SbomJson has an invalid structure.");
         }
 
         if (string.IsNullOrEmpty(specType) || (specType != "CycloneDX" && specType != "SPDX"))
         {
-            throw new ArgumentException(
-                "command.SbomJson must be a valid CycloneDX or SPDX document.",
-                nameof(command));
+            throw new RequestValidationException(
+                "command.SbomJson must be a valid CycloneDX or SPDX document.");
         }
-        
+
         var sbom = new Sbom
         {
             Id = Guid.NewGuid(),
@@ -85,21 +79,18 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
         await unitOfWork.ExecuteAsync(async () =>
         {
             await repository.AddAsync(sbom, cancellationToken);
-            
+
             var job = new ValidationJob
             {
                 Id = Guid.NewGuid(),
-                SbomId = sbom.Id, 
+                SbomId = sbom.Id,
                 Status = ValidationJobStatus.Pending,
                 Profile = "NIS2-Default",
                 CreatedAt = DateTime.UtcNow
             };
 
-            
             await jobRepository.AddAsync(job, cancellationToken);
         }, cancellationToken, true);
-        
-
 
         return sbom.Id;
     }
