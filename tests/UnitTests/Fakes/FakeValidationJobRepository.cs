@@ -15,6 +15,7 @@ public class FakeValidationJobRepository : IValidationJobRepository
     public ValidationResult? SavedResult { get; private set; }
 
     public bool FailCalled { get; private set; }
+    public ValidationJob? FailedJob { get; private set; }
     public string? FailReason { get; private set; }
 
     public Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
@@ -40,7 +41,7 @@ public class FakeValidationJobRepository : IValidationJobRepository
     public Task FailJobAsync(ValidationJob job, string reason, CancellationToken cancellationToken)
     {
         FailCalled = true;
-        CompletedJob = job;
+        FailedJob = job;
         FailReason = reason;
         return Task.CompletedTask;
     }
