@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10.0.104
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.104'
+          include-prerelease: true
+
+      - name: Verify .NET version
+        run: dotnet --version
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release -warnaserror
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
