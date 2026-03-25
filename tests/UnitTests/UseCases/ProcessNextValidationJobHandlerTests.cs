@@ -22,7 +22,7 @@ public class ProcessNextValidationJobHandlerTests
                 Status = ValidationJobStatus.Pending
             }
         };
-        
+
         var handler = CreateHandler(jobRepo: jobRepo);
 
         // Act
@@ -53,7 +53,7 @@ public class ProcessNextValidationJobHandlerTests
         // Assert
         Assert.False(result);
     }
-    
+
     [Fact]
     public async Task HandleAsyncValidJobProcessesSuccessfully()
     {
@@ -69,10 +69,12 @@ public class ProcessNextValidationJobHandlerTests
         };
 
         var validationTool = new FakeValidationTool();
-        
         var fakeSbomRepoWithData = new FakeSbomRepositoryWithData();
-        
-        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: fakeSbomRepoWithData,validationTool: validationTool);
+
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: fakeSbomRepoWithData,
+            validationTool: validationTool);
 
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
@@ -184,7 +186,7 @@ public class ProcessNextValidationJobHandlerTests
                 Status = ValidationJobStatus.Pending
             }
         };
-        
+
         var validationTool = new FakeValidationTool
         {
             ResultToReturn = new ValidationToolResult

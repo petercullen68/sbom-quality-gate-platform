@@ -14,7 +14,7 @@ public class SubmitSbomHandlerTest
         var sbomRepo = new FakeSbomRepository();
         var jobRepo = new FakeValidationJobRepository();
         var unitOfWork = new FakeUnitOfWork();
-        
+
         var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, unitOfWork: unitOfWork);
 
         var command = new SubmitSbomCommand
@@ -126,9 +126,9 @@ public class SubmitSbomHandlerTest
         Assert.Equal("CycloneDX", sbomRepo.AddedSbom!.SpecType);
         Assert.Equal("1.4", sbomRepo.AddedSbom.SpecVersion);
     }
-    
+
     [Fact]
-    public async Task HandleAsyncMissingMetadataDoesNotThrowAndPersistsSbom()
+    public async Task HandleAsyncMissingMetadataThrowsArgumentExceptionAndDoesNotPersist()
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
