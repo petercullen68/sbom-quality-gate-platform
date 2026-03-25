@@ -30,8 +30,12 @@ public class ProcessNextValidationJobHandlerTests
 
         // Assert
         Assert.False(result);
+        Assert.True(jobRepo.FailCalled);
+        Assert.Equal("SBOM not found", jobRepo.FailReason);
+        Assert.NotNull(jobRepo.FailedJob);
+        Assert.False(jobRepo.CompleteCalled);
     }
-    
+
     [Fact]
     public async Task HandleAsyncNoJobsReturnsFalse()
     {
@@ -97,16 +101,20 @@ public class ProcessNextValidationJobHandlerTests
         {
             ShouldThrow = true
         };
-        
-        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: null, validationTool: validationTool);
-        
+
+        var sbomRepo = new FakeSbomRepositoryWithData();
+        var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: sbomRepo, validationTool: validationTool);
+
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
 
         // Assert
         Assert.False(result);
+        Assert.True(validationTool.WasCalled);
+        Assert.True(jobRepo.FailCalled);
+        Assert.Contains("Simulated validation tool failure", jobRepo.FailReason);
     }
-    
+
     [Fact]
     public async Task HandleAsyncCompleteJobFailsAndDoesNotReportSuccess()
     {
@@ -152,14 +160,17 @@ public class ProcessNextValidationJobHandlerTests
             validationTool: validationTool,
             unitOfWork: unitOfWork);
 
-        // Act + Assert
+        // Act
         var result = await handler.HandleAsync(CancellationToken.None);
 
-        // 🔥 transaction was attempted
+        // Assert
         Assert.False(result);
         Assert.True(unitOfWork.Executed);
+        Assert.True(jobRepo.FailCalled);
+        Assert.Equal(job.Id, jobRepo.FailedJob?.Id);
+        Assert.Contains("Simulated failure during completion", jobRepo.FailReason);
     }
-    
+
     [Fact]
     public async Task HandleAsyncValidationFailsReturnsTrue()
     {
