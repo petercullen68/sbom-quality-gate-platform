@@ -77,11 +77,10 @@ public class SubmitSbomHandlerTest
         Assert.Equal("command", ex.ParamName);
         Assert.Contains("invalid JSON", ex.Message);
 
-        // 🔥 ensure nothing persisted
         Assert.False(sbomRepo.AddCalled);
         Assert.False(jobRepo.AddCalled);
     }
-    
+
     [Fact]
     public async Task HandleAsyncJobCreationFailsThrowsAndDoesNotLeaveSystemInInvalidState()
     {
@@ -169,14 +168,13 @@ public class SubmitSbomHandlerTest
         Assert.Equal("command", ex.ParamName);
         Assert.Contains("valid CycloneDX or SPDX", ex.Message);
 
-        // 🔥 nothing persisted
         Assert.False(sbomRepo.AddCalled);
         Assert.False(jobRepo.AddCalled);
     }
-    
+
     private static SubmitSbomHandler CreateHandler(
-        ISbomRepository? sbomRepo = null, 
-        IValidationJobRepository? jobRepo = null, 
+        ISbomRepository? sbomRepo = null,
+        IValidationJobRepository? jobRepo = null,
         IUnitOfWork? unitOfWork = null)
     {
         sbomRepo ??= new FakeSbomRepository();
