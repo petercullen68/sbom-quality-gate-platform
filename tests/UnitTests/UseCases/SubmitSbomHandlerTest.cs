@@ -1,4 +1,3 @@
-using System.Text.Json;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Domain.Enums;
@@ -32,30 +31,22 @@ public class SubmitSbomHandlerTest
         await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-
-        // 🔥 transaction used
         Assert.True(unitOfWork.Executed);
+        Assert.True(unitOfWork.NotifyRequested);
 
-        // 🔥 sbom saved
         Assert.True(sbomRepo.AddCalled);
         Assert.NotNull(sbomRepo.AddedSbom);
 
-        // 🔥 job created
         Assert.True(jobRepo.AddCalled);
         Assert.NotNull(jobRepo.AddedJob);
 
-        // 🔥 linkage
         Assert.Equal(sbomRepo.AddedSbom!.Id, jobRepo.AddedJob!.SbomId);
-
-        // 🔥 defaults (adjust if your handler differs)
         Assert.Equal(ValidationJobStatus.Pending, jobRepo.AddedJob.Status);
-
-        // optional depending on your implementation
         Assert.Equal("NIS2-Default", jobRepo.AddedJob.Profile);
     }
-    
+
     [Fact]
-    public async Task HandleAsyncInvalidJsonThrowsJsonException()
+    public async Task HandleAsyncInvalidJsonThrowsArgumentException()
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
@@ -105,17 +96,11 @@ public class SubmitSbomHandlerTest
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.HandleAsync(command, CancellationToken.None));
 
-        // 🔥 ensure transaction was attempted
         Assert.True(unitOfWork.Executed);
-
-        // 🔥 SBOM was attempted
+        Assert.True(unitOfWork.NotifyRequested);
         Assert.True(sbomRepo.AddCalled);
-
-        // ⚠️ NOTE:
-        // In real DB → rollback would undo this
-        // In fake → we just verify execution path
     }
-    
+
     [Fact]
     public async Task HandleAsyncExtractsSpecTypeAndVersion()
     {
