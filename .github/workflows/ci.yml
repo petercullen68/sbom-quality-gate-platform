@@ -2,33 +2,48 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Setup .NET 10.0.104
+      - name: Setup .NET SDK from global.json
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.104'
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: |
+            global.json
+            Directory.Packages.props
+            **/*.csproj
+            **/packages.lock.json
 
-      - name: Verify .NET version
-        run: dotnet --version
+      - name: Verify .NET info
+        run: dotnet --info
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore SbomQualityGate.slnx
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release -warnaserror
+        run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test SbomQualityGate.slnx --no-build --configuration Release --verbosity normal
