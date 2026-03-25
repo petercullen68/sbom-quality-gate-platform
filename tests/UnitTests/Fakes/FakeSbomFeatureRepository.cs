@@ -19,6 +19,8 @@ public class FakeSbomFeatureRepository : ISbomFeatureRepository
         IEnumerable<string> features,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var matches = features
             .Where(f => _existing.Contains(f))
             .ToList();
@@ -30,6 +32,7 @@ public class FakeSbomFeatureRepository : ISbomFeatureRepository
         IEnumerable<SbomFeature> features,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         AddRangeCalled = true;
         AddedFeatures.AddRange(features);
         return Task.CompletedTask;

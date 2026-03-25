@@ -12,9 +12,9 @@ public class FakeUnitOfWork : IUnitOfWork
         CancellationToken cancellationToken,
         bool notifyValidationJobs = false)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Executed = true;
         NotifyRequested = notifyValidationJobs;
-
         await action();
     }
 
@@ -22,6 +22,7 @@ public class FakeUnitOfWork : IUnitOfWork
         Func<Task<T>> action,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Executed = true;
         return await action();
     }
