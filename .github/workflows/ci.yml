@@ -18,7 +18,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.104'
-          include-prerelease: true
 
       - name: Verify .NET version
         run: dotnet --version
