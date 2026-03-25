@@ -6,6 +6,9 @@ namespace SbomQualityGate.UnitTests.Fakes;
 public class FailingCompleteValidationJobRepository : IValidationJobRepository
 {
     public ValidationJob? JobToReturn { get; init; }
+    public bool FailCalled { get; private set; }
+    public ValidationJob? FailedJob { get; private set; }
+    public string? FailReason { get; private set; }
 
     public Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
         => Task.FromResult(JobToReturn);
@@ -17,5 +20,10 @@ public class FailingCompleteValidationJobRepository : IValidationJobRepository
         => throw new InvalidOperationException("Simulated failure during completion");
 
     public Task FailJobAsync(ValidationJob job, string reason, CancellationToken cancellationToken)
-        => Task.CompletedTask;
+    {
+        FailCalled = true;
+        FailedJob = job;
+        FailReason = reason;
+        return Task.CompletedTask;
+    }
 }
