@@ -78,9 +78,9 @@ public class ProcessNextValidationJobHandlerTests
         Assert.True(validationTool.WasCalled);
         Assert.True(jobRepo.CompleteCalled);
     }
-    
+
     [Fact]
-    public async Task HandleAsyncValidationToolReturnsFalse()
+    public async Task HandleAsyncValidationToolThrowsFailsJobAndReturnsFalse()
     {
         // Arrange
         var jobRepo = new FakeValidationJobRepository
@@ -183,19 +183,19 @@ public class ProcessNextValidationJobHandlerTests
                 ReportJson = "{}"
             }
         };
-        
+
         var fakeSbomRepoWithData = new FakeSbomRepositoryWithData();
-        
+
         var handler = CreateHandler(jobRepo: jobRepo, sbomRepo: fakeSbomRepoWithData, validationTool: validationTool);
 
         // Act
         var result = await handler.HandleAsync(CancellationToken.None);
 
         // Assert
-        Assert.True(result); // important: processed successfully, even if failed
+        Assert.True(result); // processed successfully even when validation status is Fail
         Assert.True(jobRepo.CompleteCalled);
     }
-    
+
     private static ProcessNextValidationJobHandler CreateHandler(
         IValidationJobRepository? jobRepo = null,
         ISbomRepository? sbomRepo = null,
