@@ -91,7 +91,7 @@ builder.Services.AddScoped<ProcessNextValidationJobHandler>();
 
 builder.Services.AddSingleton<JobProcessor>();
 
-builder.Services.AddSingleton<PostgresNotificationListener>(sp => new PostgresNotificationListener(connectionString!));
+builder.Services.AddSingleton<PostgresNotificationListener>(_ => new PostgresNotificationListener(connectionString!));
 
 //
 // ------------------------------

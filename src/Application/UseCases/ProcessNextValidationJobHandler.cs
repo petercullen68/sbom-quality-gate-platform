@@ -11,7 +11,7 @@ public class ProcessNextValidationJobHandler(
 {
     public async Task<bool> HandleAsync(CancellationToken cancellationToken)
     {
-        return await unitOfWork.ExecuteAsync<bool>(async () =>
+        return await unitOfWork.ExecuteAsync(async () =>
         {
             var job = await jobRepository.ClaimNextPendingAsync(cancellationToken);
 
