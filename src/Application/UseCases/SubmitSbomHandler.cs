@@ -10,7 +10,7 @@ public class SubmitSbomHandler(ISbomRepository repository, IValidationJobReposit
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command, nameof(command));
+        ArgumentNullException.ThrowIfNull(command);
         var specType = string.Empty;
         var specVersion = string.Empty;
         var componentCount = 0;

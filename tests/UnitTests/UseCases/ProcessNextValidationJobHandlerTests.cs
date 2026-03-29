@@ -226,4 +226,43 @@ public class ProcessNextValidationJobHandlerTests
             sbomRepo,
             unitOfWork);
     }
+    
+    [Fact]
+    public async Task HandleAsyncValidationFailsJobIsCompletedNotFailed()
+    {
+        // Arrange
+        var jobRepo = new FakeValidationJobRepository
+        {
+            JobToReturn = new ValidationJob
+            {
+                Id = Guid.NewGuid(),
+                SbomId = Guid.NewGuid(),
+                Status = ValidationJobStatus.Pending
+            }
+        };
+
+        var validationTool = new FakeValidationTool
+        {
+            ResultToReturn = new ValidationToolResult
+            {
+                Status = ValidationStatus.Fail,
+                Score = 40,
+                ReportJson = "{}"
+            }
+        };
+
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: new FakeSbomRepositoryWithData(),
+            validationTool: validationTool);
+
+        // Act
+        var result = await handler.HandleAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        Assert.True(jobRepo.CompleteCalled);
+        Assert.Equal(ValidationJobStatus.Completed, jobRepo.CompletedJobStatus);  // ← the real assertion
+        Assert.False(jobRepo.FailCalled);
+    }
 }

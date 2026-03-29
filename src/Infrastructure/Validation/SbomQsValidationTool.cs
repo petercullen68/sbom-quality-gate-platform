@@ -6,17 +6,16 @@ using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Infrastructure.Validation;
 
-public class SbomQsValidationTool(IProcessRunner processRunner) : IValidationTool
+public class SbomQsValidationTool(
+    IProcessRunner processRunner,
+    SbomQsCircuitBreaker circuitBreaker) : IValidationTool
 {
-    private int _failureCount;
-    private DateTime _blockedUntil = DateTime.MinValue;
-
     public async Task<ValidationToolResult> ValidateAsync(
         string sbomJson,
         string profile,
         CancellationToken cancellationToken)
     {
-        if (DateTime.UtcNow < _blockedUntil)
+        if (circuitBreaker.IsOpen)
         {
             throw new InvalidOperationException("sbomqs temporarily unavailable (circuit open)");
         }
@@ -26,7 +25,6 @@ public class SbomQsValidationTool(IProcessRunner processRunner) : IValidationToo
 
         try
         {
-            // 🔥 replaced all Process code with abstraction
             var (exitCode, output, error) = await processRunner.RunAsync(
                 "sbomqs",
                 $"score {tempFile} --json",
@@ -62,8 +60,7 @@ public class SbomQsValidationTool(IProcessRunner processRunner) : IValidationToo
             var score = scoreElement.GetDouble();
             var status = score >= 80 ? ValidationStatus.Pass : ValidationStatus.Fail;
 
-            // ✅ reset breaker on success
-            _failureCount = 0;
+            circuitBreaker.RecordSuccess();
 
             return new ValidationToolResult
             {
@@ -74,15 +71,7 @@ public class SbomQsValidationTool(IProcessRunner processRunner) : IValidationToo
         }
         catch (Exception)
         {
-            // ✅ circuit breaker logic unchanged
-            _failureCount++;
-
-            if (_failureCount >= 5)
-            {
-                _blockedUntil = DateTime.UtcNow.AddMinutes(1);
-                _failureCount = 0;
-            }
-
+            circuitBreaker.RecordFailure();
             throw;
         }
         finally

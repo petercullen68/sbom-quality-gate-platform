@@ -67,12 +67,12 @@ builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
 
-//
 // ------------------------------
 // Infrastructure (External Tools)
 // ------------------------------
 //
 builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
+builder.Services.AddSingleton<SbomQsCircuitBreaker>();   // ← singleton: shared state across scopes
 builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
 //
@@ -91,7 +91,7 @@ builder.Services.AddScoped<ProcessNextValidationJobHandler>();
 
 builder.Services.AddSingleton<JobProcessor>();
 
-builder.Services.AddSingleton<PostgresNotificationListener>(sp => new PostgresNotificationListener(connectionString!));
+builder.Services.AddSingleton<PostgresNotificationListener>(_ => new PostgresNotificationListener(connectionString!));
 
 //
 // ------------------------------

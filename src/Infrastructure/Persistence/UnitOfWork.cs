@@ -34,7 +34,8 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
     
     public async Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool notifyValidationJobs = false)
     {
         var strategy = context.Database.CreateExecutionStrategy();
 
@@ -48,7 +49,14 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
             await context.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-
+            
+            if (notifyValidationJobs)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "NOTIFY validation_jobs",
+                    cancellationToken);
+            }
+            
             return result;
         });
     }

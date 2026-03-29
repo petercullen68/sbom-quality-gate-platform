@@ -36,7 +36,7 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         return Task.CompletedTask;
     }
-    
+
     public async Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
     {
         var sql = """
@@ -63,7 +63,7 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         return results.FirstOrDefault();
     }
-    
+
     public Task CompleteJobAsync(
         ValidationJob job,
         ValidationResult result,
@@ -71,10 +71,10 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
     {
         context.ValidationResults.Add(result);
 
-        job.Status = result.Status == ValidationStatus.Pass
-            ? ValidationJobStatus.Completed
-            : ValidationJobStatus.Failed;
-
+        // The job completed successfully — the validation outcome (pass/fail)
+        // lives on ValidationResult, not here. Failed means the job itself
+        // errored (process crash, SBOM not found, retry limit hit).
+        job.Status = ValidationJobStatus.Completed;
         job.CompletedAt = DateTime.UtcNow;
 
         context.ValidationJobs.Update(job);

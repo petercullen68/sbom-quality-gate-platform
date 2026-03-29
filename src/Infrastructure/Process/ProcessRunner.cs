@@ -20,7 +20,8 @@ public class ProcessRunner : IProcessRunner
             CreateNoWindow = true
         };
 
-        using var process = new Process { StartInfo = psi };
+        using var process = new Process();
+        process.StartInfo = psi;
 
         process.Start();
 

@@ -20,10 +20,12 @@ public class FakeUnitOfWork : IUnitOfWork
 
     public async Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool notifyValidationJobs = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         Executed = true;
+        NotifyRequested = notifyValidationJobs;
         return await action();
     }
 }
