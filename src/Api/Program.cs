@@ -90,6 +90,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISbomFeatureRepository, SbomFeatureRepository>();
+builder.Services.AddScoped<ISbomProfileRepository, SbomProfileRepository>();
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 
@@ -100,7 +101,7 @@ builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 //
 
 builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
-builder.Services.AddScoped<DiscoverSbomFeaturesHandler>();
+builder.Services.AddScoped<DiscoverSbomReportHandler>();
 
 //
 // ------------------------------

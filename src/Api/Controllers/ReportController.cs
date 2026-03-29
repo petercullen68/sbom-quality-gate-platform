@@ -6,9 +6,9 @@ using SbomQualityGate.Application.UseCases;
 namespace SbomQualityGate.Api.Controllers;
 
 [ApiController]
-[Route("api/features")]
-public class FeaturesController(
-    DiscoverSbomFeaturesHandler handler) : ControllerBase
+[Route("api/report")]
+public class ReportController(
+    DiscoverSbomReportHandler handler) : ControllerBase
 {
     [HttpPost("discover")]
     public async Task<IActionResult> Discover(

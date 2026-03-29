@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ValidationJob> ValidationJobs => Set<ValidationJob>();
     public DbSet<ValidationResult> ValidationResults => Set<ValidationResult>();
     public DbSet<SbomFeature> SbomFeatures => Set<SbomFeature>();
+    public DbSet<SbomProfile> SbomProfiles => Set<SbomProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,14 +20,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.SbomJson)
                 .HasColumnType("jsonb");
         });
-        
+
         modelBuilder.Entity<ValidationJob>(entity =>
         {
             entity.HasKey(x => x.Id);
-            
+
             entity.HasIndex(x => new { x.Status, x.CreatedAt });
         });
-        
+
         modelBuilder.Entity<ValidationResult>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -43,7 +44,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(x => x.ValidationJobId)
                 .IsUnique();
         });
-        
+
         modelBuilder.Entity<SbomFeature>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -53,6 +54,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(x => x.Feature).IsRequired();
             entity.Property(x => x.Category).IsRequired();
+        });
+
+        modelBuilder.Entity<SbomProfile>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.Name)
+                .IsUnique();
+
+            entity.Property(x => x.Name).IsRequired();
+            entity.Property(x => x.Description).IsRequired();
         });
     }
 }
