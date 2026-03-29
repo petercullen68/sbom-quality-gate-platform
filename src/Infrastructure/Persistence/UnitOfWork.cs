@@ -34,7 +34,8 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
     
     public async Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool notifyValidationJobs = false)
     {
         var strategy = context.Database.CreateExecutionStrategy();
 
