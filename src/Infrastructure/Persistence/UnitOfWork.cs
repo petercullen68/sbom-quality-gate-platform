@@ -49,7 +49,14 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
             await context.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-
+            
+            if (notifyValidationJobs)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "NOTIFY validation_jobs",
+                    cancellationToken);
+            }
+            
             return result;
         });
     }
