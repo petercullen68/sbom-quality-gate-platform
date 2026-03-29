@@ -47,14 +47,64 @@ public class SubmitSbomHandlerTest
     }
 
     [Fact]
-    public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
+    public async Task HandleAsyncNoSystemProfilesExistThrowsRequestValidationException()
+    {
+        // Arrange
+        var profileRepo = new FakeSbomProfileRepository(anySystemProfilesExist: false);
+        var handler = CreateHandler(profileRepo: profileRepo);
+
+        var command = new SubmitSbomCommand
+        {
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.Contains("No SBOM quality profiles have been discovered", ex.Message);
+    }
+
+    [Fact]
+    public async Task HandleAsyncNoSystemProfilesExistDoesNotPersistAnything()
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
         var jobRepo = new FakeValidationJobRepository();
-        var unitOfWork = new FakeUnitOfWork();
+        var profileRepo = new FakeSbomProfileRepository(anySystemProfilesExist: false);
 
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, unitOfWork: unitOfWork);
+        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, profileRepo: profileRepo);
+
+        var command = new SubmitSbomCommand
+        {
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.False(sbomRepo.AddCalled);
+        Assert.False(jobRepo.AddCalled);
+    }
+
+    [Fact]
+    public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
+    {
+        // Arrange
+        var handler = CreateHandler();
 
         var command = new SubmitSbomCommand
         {
@@ -67,8 +117,6 @@ public class SubmitSbomHandlerTest
 
         // Assert
         Assert.Contains("invalid JSON", ex.Message);
-        Assert.False(sbomRepo.AddCalled);
-        Assert.False(jobRepo.AddCalled);
     }
 
     [Fact]
@@ -105,8 +153,7 @@ public class SubmitSbomHandlerTest
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
-
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: null, unitOfWork: null);
+        var handler = CreateHandler(sbomRepo: sbomRepo);
 
         var command = new SubmitSbomCommand
         {
@@ -132,8 +179,7 @@ public class SubmitSbomHandlerTest
         // Arrange
         var sbomRepo = new FakeSbomRepository();
         var jobRepo = new FakeValidationJobRepository();
-
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, unitOfWork: null);
+        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo);
 
         var command = new SubmitSbomCommand
         {
@@ -157,15 +203,18 @@ public class SubmitSbomHandlerTest
     private static SubmitSbomHandler CreateHandler(
         ISbomRepository? sbomRepo = null,
         IValidationJobRepository? jobRepo = null,
+        ISbomProfileRepository? profileRepo = null,
         IUnitOfWork? unitOfWork = null)
     {
         sbomRepo ??= new FakeSbomRepository();
         jobRepo ??= new FakeValidationJobRepository();
+        profileRepo ??= new FakeSbomProfileRepository(anySystemProfilesExist: true);
         unitOfWork ??= new FakeUnitOfWork();
 
         return new SubmitSbomHandler(
             sbomRepo,
             jobRepo,
+            profileRepo,
             unitOfWork);
     }
 }

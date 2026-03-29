@@ -3,16 +3,20 @@ using SbomQualityGate.Domain.Entities;
 
 namespace SbomQualityGate.UnitTests.Fakes;
 
-public class FakeSbomProfileRepository : ISbomProfileRepository
+public class FakeSbomProfileRepository(
+    bool anySystemProfilesExist = true,
+    params string[] existingProfiles)
+    : ISbomProfileRepository
 {
-    private readonly HashSet<string> _existing;
+    private readonly HashSet<string> _existing = new(existingProfiles, StringComparer.OrdinalIgnoreCase);
 
     public List<SbomProfile> AddedProfiles { get; } = [];
     public bool AddRangeCalled { get; private set; }
 
-    public FakeSbomProfileRepository(params string[] existingProfiles)
+    public Task<bool> AnySystemProfilesExistAsync(CancellationToken cancellationToken)
     {
-        _existing = new HashSet<string>(existingProfiles, StringComparer.OrdinalIgnoreCase);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(anySystemProfilesExist);
     }
 
     public Task<List<string>> GetExistingProfilesAsync(

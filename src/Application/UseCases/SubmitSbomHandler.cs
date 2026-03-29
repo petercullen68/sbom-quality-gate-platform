@@ -6,14 +6,30 @@ using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Application.UseCases;
 
-public class SubmitSbomHandler(ISbomRepository repository, IValidationJobRepository jobRepository, IUnitOfWork unitOfWork) : ISubmitSbomHandler
+public class SubmitSbomHandler(
+    ISbomRepository repository,
+    IValidationJobRepository jobRepository,
+    ISbomProfileRepository profileRepository,
+    IUnitOfWork unitOfWork) : ISubmitSbomHandler
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        // Guard: profiles must be discovered before SBOMs can be submitted.
+        // Without system profiles, validation results would have no profile
+        // scores to store against — hard reject early to preserve data consistency.
+        if (!await profileRepository.AnySystemProfilesExistAsync(cancellationToken))
+        {
+            throw new RequestValidationException(
+                "No SBOM quality profiles have been discovered. " +
+                "Please submit a sbomqs report to the discovery endpoint before uploading SBOMs.");
+        }
+
         var specType = string.Empty;
         var specVersion = string.Empty;
         var componentCount = 0;
+
         try
         {
             using var doc = JsonDocument.Parse(command.SbomJson);

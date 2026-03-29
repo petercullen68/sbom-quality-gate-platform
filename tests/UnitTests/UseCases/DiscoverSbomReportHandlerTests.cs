@@ -143,7 +143,7 @@ public class DiscoverSbomReportHandlerTests
     [Fact]
     public async Task HandleAsyncExistingProfilesAreNotReAdded()
     {
-        var profileRepo = new FakeSbomProfileRepository("Interlynk");
+        var profileRepo = new FakeSbomProfileRepository(existingProfiles: "Interlynk");
         var handler = CreateHandler(profileRepo: profileRepo);
 
         var json = BuildReport("comprehenssive",
@@ -198,7 +198,7 @@ public class DiscoverSbomReportHandlerTests
     public async Task HandleAsyncAllExistingNoTransactionExecuted()
     {
         var featureRepo = new FakeSbomFeatureRepository("SBOM-GQ-001");
-        var profileRepo = new FakeSbomProfileRepository("Interlynk");
+        var profileRepo = new FakeSbomProfileRepository(existingProfiles: "Interlynk");
         var unitOfWork = new FakeUnitOfWork();
         var handler = CreateHandler(featureRepo, profileRepo, unitOfWork);
 

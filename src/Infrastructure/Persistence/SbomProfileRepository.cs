@@ -6,6 +6,12 @@ namespace SbomQualityGate.Infrastructure.Persistence;
 
 public class SbomProfileRepository(AppDbContext context) : ISbomProfileRepository
 {
+    public Task<bool> AnySystemProfilesExistAsync(CancellationToken cancellationToken)
+    {
+        return context.SbomProfiles
+            .AnyAsync(x => !x.IsUserDefined, cancellationToken);
+    }
+
     public async Task<List<string>> GetExistingProfilesAsync(
         IEnumerable<string> names,
         CancellationToken cancellationToken)

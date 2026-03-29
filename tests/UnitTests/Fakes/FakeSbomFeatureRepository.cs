@@ -3,17 +3,12 @@ using SbomQualityGate.Domain.Entities;
 
 namespace SbomQualityGate.UnitTests.Fakes;
 
-public class FakeSbomFeatureRepository : ISbomFeatureRepository
+public class FakeSbomFeatureRepository(params string[] existingFeatures) : ISbomFeatureRepository
 {
-    private readonly HashSet<string> _existing;
+    private readonly HashSet<string> _existing = new(existingFeatures, StringComparer.OrdinalIgnoreCase);
 
     public List<SbomFeature> AddedFeatures { get; } = [];
     public bool AddRangeCalled { get; private set; }
-
-    public FakeSbomFeatureRepository(params string[] existingFeatures)
-    {
-        _existing = new HashSet<string>(existingFeatures, StringComparer.OrdinalIgnoreCase);
-    }
 
     public Task<List<string>> GetExistingFeaturesAsync(
         IEnumerable<string> features,
