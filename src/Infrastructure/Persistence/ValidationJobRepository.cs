@@ -36,7 +36,7 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         return Task.CompletedTask;
     }
-    
+
     public async Task<ValidationJob?> ClaimNextPendingAsync(CancellationToken cancellationToken)
     {
         var sql = """
@@ -63,7 +63,7 @@ public class ValidationJobRepository(AppDbContext context) : IValidationJobRepos
 
         return results.FirstOrDefault();
     }
-    
+
     public Task CompleteJobAsync(
         ValidationJob job,
         ValidationResult result,
