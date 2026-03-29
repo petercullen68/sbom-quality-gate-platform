@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Domain.Entities;
 
@@ -18,7 +19,7 @@ public class DiscoverSbomFeaturesHandler(
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException("Invalid JSON payload.");
+            throw new RequestValidationException("Invalid JSON payload.");
         }
 
         using (doc)
@@ -28,7 +29,7 @@ public class DiscoverSbomFeaturesHandler(
             if (!root.TryGetProperty("files", out var files) ||
                 files.ValueKind != JsonValueKind.Array)
             {
-                throw new InvalidOperationException("Missing or invalid 'files' array.");
+                throw new RequestValidationException("Missing or invalid 'files' array.");
             }
 
             var incoming = new Dictionary<string, (string Category, bool Ignored)>(

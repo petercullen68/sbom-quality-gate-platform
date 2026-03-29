@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SbomQualityGate.Api.Configuration;
 using SbomQualityGate.Api.Models;
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 
@@ -16,6 +17,8 @@ public class SbomsController(
     ISbomRepository sbomRepository,
     IOptions<UploadOptions> uploadOptions) : ControllerBase
 {
+    private sealed class UploadTooLargeException(string message) : Exception(message);
+
     [HttpPost]
     public Task<IActionResult> Submit([FromBody] SubmitSbomCommand command, CancellationToken cancellationToken) =>
         SubmitInternalAsync(command, cancellationToken);
@@ -31,7 +34,7 @@ public class SbomsController(
             ModelState.AddModelError(nameof(request.File), "File is required.");
             return ValidationProblem(ModelState);
         }
-    
+
         var maxUploadBytes = uploadOptions.Value.MaxUploadBytes;
         if (maxUploadBytes <= 0)
         {
@@ -40,7 +43,7 @@ public class SbomsController(
                 detail: "Upload:MaxUploadBytes must be greater than zero.",
                 statusCode: StatusCodes.Status500InternalServerError);
         }
-    
+
         if (request.File.Length > maxUploadBytes)
         {
             return Problem(
@@ -48,29 +51,29 @@ public class SbomsController(
                 detail: $"Maximum allowed size is {maxUploadBytes} bytes.",
                 statusCode: StatusCodes.Status413PayloadTooLarge);
         }
-    
+
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
-    
+
         string sbomJson;
         try
         {
             sbomJson = await ReadUtf8WithLimitAsync(request.File, maxUploadBytes, cancellationToken);
         }
-        catch (InvalidOperationException)
+        catch (UploadTooLargeException)
         {
             return Problem(
                 title: "File too large",
                 detail: $"Maximum allowed size is {maxUploadBytes} bytes.",
                 statusCode: StatusCodes.Status413PayloadTooLarge);
         }
-    
+
         if (!IsValidJson(sbomJson))
         {
             ModelState.AddModelError(nameof(request.File), "Uploaded file is not valid JSON.");
             return ValidationProblem(ModelState);
         }
-    
+
         var command = new SubmitSbomCommand
         {
             Team = request.Team.Trim(),
@@ -78,7 +81,7 @@ public class SbomsController(
             Version = request.Version.Trim(),
             SbomJson = sbomJson
         };
-    
+
         return await SubmitInternalAsync(command, cancellationToken);
     }
 
@@ -109,8 +112,16 @@ public class SbomsController(
 
     private async Task<IActionResult> SubmitInternalAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
     {
-        var id = await handler.HandleAsync(command, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id }, new { id });
+        try
+        {
+            var id = await handler.HandleAsync(command, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id }, new { id });
+        }
+        catch (RequestValidationException ex)
+        {
+            ModelState.AddModelError(nameof(command.SbomJson), ex.Message);
+            return ValidationProblem(ModelState);
+        }
     }
 
     private static bool IsValidJson(string content)
@@ -145,7 +156,7 @@ public class SbomsController(
 
             totalRead += read;
             if (totalRead > maxBytes)
-                throw new InvalidOperationException($"Upload exceeded {maxBytes} bytes.");
+                throw new UploadTooLargeException($"Upload exceeded {maxBytes} bytes.");
 
             await memory.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
         }

@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Diagnostics;
 using System.Globalization;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Api.Configuration;
+using SbomQualityGate.Api.Logging;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
-using SbomQualityGate.Infrastructure.Validation;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,6 +110,15 @@ builder.Services.AddScoped<DiscoverSbomFeaturesHandler>();
 
 builder.Services.AddControllers();
 
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -127,6 +138,40 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        var ex = feature?.Error;
+
+        var loggerFactory = context.RequestServices.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger("GlobalExceptionHandler");
+        ApiLog.UnhandledException(
+            logger,
+            context.Request.Method,
+            context.Request.Path.ToString(),
+            ex);
+        
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred.",
+            Detail = app.Environment.IsDevelopment() ? ex?.Message : null,
+            Extensions =
+            {
+                ["traceId"] = context.TraceIdentifier
+            }
+        };
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+
+        await context.Response.WriteAsJsonAsync(problem);
+    });
+});
+
 
 app.UseHttpsRedirection();
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.UnitTests.Fakes;
 
@@ -229,26 +230,26 @@ public class DiscoverSbomFeaturesHandlerTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task HandleAsyncInvalidJsonThrowsInvalidOperationException()
+    public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
     {
         // Arrange
         var handler = CreateHandler();
 
         // Act + Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
             handler.HandleAsync("not-json", CancellationToken.None));
 
         Assert.Contains("Invalid JSON payload", ex.Message);
     }
 
     [Fact]
-    public async Task HandleAsyncMissingFilesArrayThrowsInvalidOperationException()
+    public async Task HandleAsyncMissingFilesArrayThrowsRequestValidationException()
     {
         // Arrange
         var handler = CreateHandler();
 
         // Act + Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
             handler.HandleAsync("""{ "other": [] }""", CancellationToken.None));
 
         Assert.Contains("files", ex.Message);

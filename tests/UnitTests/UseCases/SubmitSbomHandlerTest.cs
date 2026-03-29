@@ -1,3 +1,4 @@
+using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Domain.Enums;
@@ -46,7 +47,7 @@ public class SubmitSbomHandlerTest
     }
 
     [Fact]
-    public async Task HandleAsyncInvalidJsonThrowsArgumentException()
+    public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
@@ -61,13 +62,11 @@ public class SubmitSbomHandlerTest
         };
 
         // Act
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
             handler.HandleAsync(command, CancellationToken.None));
 
         // Assert
-        Assert.Equal("command", ex.ParamName);
         Assert.Contains("invalid JSON", ex.Message);
-
         Assert.False(sbomRepo.AddCalled);
         Assert.False(jobRepo.AddCalled);
     }
@@ -128,7 +127,7 @@ public class SubmitSbomHandlerTest
     }
 
     [Fact]
-    public async Task HandleAsyncMissingMetadataThrowsArgumentExceptionAndDoesNotPersist()
+    public async Task HandleAsyncMissingMetadataThrowsRequestValidationExceptionAndDoesNotPersist()
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
@@ -146,13 +145,11 @@ public class SubmitSbomHandlerTest
         };
 
         // Act
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
             handler.HandleAsync(command, CancellationToken.None));
 
         // Assert
-        Assert.Equal("command", ex.ParamName);
         Assert.Contains("valid CycloneDX or SPDX", ex.Message);
-
         Assert.False(sbomRepo.AddCalled);
         Assert.False(jobRepo.AddCalled);
     }
