@@ -15,6 +15,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets-scan:
+    name: Secrets Scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for organisation repos, not personal accounts
+
   build-and-test:
     name: Build/Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -47,6 +63,9 @@ jobs:
 
       - name: Restore
         run: dotnet restore SbomQualityGate.slnx
+
+      - name: Check for vulnerable NuGet packages
+        run: dotnet list package --vulnerable --include-transitive
 
       - name: Build
         run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
