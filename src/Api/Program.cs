@@ -3,12 +3,15 @@ using System.Globalization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using SbomQualityGate.Api.Configuration;
 using SbomQualityGate.Api.Logging;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Seed;
+using SbomQualityGate.Infrastructure.Telemetry;
 using SbomQualityGate.Infrastructure.Validation;
 using Serilog;
 
@@ -51,6 +54,18 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// ------------------------------
+// Telemetry - OpenTelemetry
+// ------------------------------
+ 
+// API Program.cs — common + AspNetCore instrumentation
+builder.AddSbomQualityGateTelemetry();
+ 
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation());
 //
 // ------------------------------
 // // Global upload/request body limits

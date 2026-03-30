@@ -5,6 +5,7 @@ using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Process;
 using SbomQualityGate.Infrastructure.Seed;
+using SbomQualityGate.Infrastructure.Telemetry;
 using SbomQualityGate.Infrastructure.Validation;
 using SbomQualityGate.Worker;
 using SbomQualityGate.Worker.Services;
@@ -55,6 +56,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
                 maxRetryDelay: TimeSpan.FromSeconds(10),
                 errorCodesToAdd: null);
         }));
+
+
+// ------------------------------
+// // Telemetry - OpenTelemetry
+// // ------------------------------
+
+
+builder.AddSbomQualityGateTelemetry();
 
 //
 // ------------------------------
