@@ -8,6 +8,8 @@ public class Worker(
     PostgresNotificationListener listener)
     : BackgroundService
 {
+    // Event ID range: 1–10
+    
     private static readonly Action<ILogger, Exception?> WorkerStarted =
         LoggerMessage.Define(
             LogLevel.Information,

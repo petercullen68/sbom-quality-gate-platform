@@ -5,6 +5,9 @@ namespace SbomQualityGate.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<Sbom> Sboms => Set<Sbom>();
     public DbSet<ValidationJob> ValidationJobs => Set<ValidationJob>();
     public DbSet<ValidationResult> ValidationResults => Set<ValidationResult>();
@@ -13,6 +16,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Team>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).IsRequired();
+
+            entity.HasIndex(x => x.Name).IsUnique();
+
+            entity.HasMany(x => x.Products)
+                .WithOne(x => x.Team)
+                .HasForeignKey(x => x.TeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Members)
+                .WithOne(x => x.Team)
+                .HasForeignKey(x => x.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).IsRequired();
+
+            entity.HasIndex(x => new { x.TeamId, x.Name }).IsUnique();
+
+            entity.HasMany(x => x.Sboms)
+                .WithOne(x => x.Product)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TeamMember>(entity =>
+        {
+            entity.HasKey(x => new { x.UserId, x.TeamId });
+        });
+
         modelBuilder.Entity<Sbom>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -49,8 +90,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => x.Feature)
-                .IsUnique();
+            entity.HasIndex(x => x.Feature).IsUnique();
 
             entity.Property(x => x.Feature).IsRequired();
             entity.Property(x => x.Category).IsRequired();
@@ -60,8 +100,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => x.Name)
-                .IsUnique();
+            entity.HasIndex(x => x.Name).IsUnique();
 
             entity.Property(x => x.Name).IsRequired();
             entity.Property(x => x.Description).IsRequired();

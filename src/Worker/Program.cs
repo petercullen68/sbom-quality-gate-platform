@@ -4,6 +4,7 @@ using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Process;
+using SbomQualityGate.Infrastructure.Seed;
 using SbomQualityGate.Infrastructure.Validation;
 using SbomQualityGate.Worker;
 using SbomQualityGate.Worker.Services;
@@ -66,6 +67,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
+builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
 // ------------------------------
 // Infrastructure (External Tools)
@@ -92,6 +95,12 @@ builder.Services.AddScoped<ProcessNextValidationJobHandler>();
 builder.Services.AddSingleton<JobProcessor>();
 
 builder.Services.AddSingleton<PostgresNotificationListener>(_ => new PostgresNotificationListener(connectionString!));
+
+// ------------------------------
+// Seed Data
+// ------------------------------
+//
+builder.Services.AddHostedService<SeedDataService>();
 
 //
 // ------------------------------

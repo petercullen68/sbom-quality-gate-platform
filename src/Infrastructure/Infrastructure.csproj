@@ -23,4 +23,9 @@
       <GeneratedCode>true</GeneratedCode>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions">
+      <HintPath>..\..\..\..\.nuget\packages\microsoft.extensions.hosting.abstractions\10.0.5\lib\net10.0\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

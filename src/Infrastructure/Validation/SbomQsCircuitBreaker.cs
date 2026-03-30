@@ -9,7 +9,7 @@ namespace SbomQualityGate.Infrastructure.Validation;
 public sealed class SbomQsCircuitBreaker
 {
     public static readonly int FailureThreshold = 5;
-    public static readonly TimeSpan BlockDuration = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan BlockDuration = TimeSpan.FromMinutes(1);
 
     private readonly Lock _lock = new();
     private int _failureCount;

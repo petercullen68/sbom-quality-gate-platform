@@ -9,6 +9,7 @@ namespace SbomQualityGate.Application.UseCases;
 public class SubmitSbomHandler(
     ISbomRepository repository,
     IValidationJobRepository jobRepository,
+    IProductRepository productRepository,
     ISbomProfileRepository profileRepository,
     IUnitOfWork unitOfWork) : ISubmitSbomHandler
 {
@@ -17,13 +18,19 @@ public class SubmitSbomHandler(
         ArgumentNullException.ThrowIfNull(command);
 
         // Guard: profiles must be discovered before SBOMs can be submitted.
-        // Without system profiles, validation results would have no profile
-        // scores to store against — hard reject early to preserve data consistency.
         if (!await profileRepository.AnySystemProfilesExistAsync(cancellationToken))
         {
             throw new RequestValidationException(
                 "No SBOM quality profiles have been discovered. " +
                 "Please submit a sbomqs report to the discovery endpoint before uploading SBOMs.");
+        }
+
+        // Guard: product must exist.
+        var product = await productRepository.GetByIdAsync(command.ProductId, cancellationToken);
+        if (product is null)
+        {
+            throw new RequestValidationException(
+                $"Product '{command.ProductId}' does not exist.");
         }
 
         var specType = string.Empty;
@@ -82,8 +89,7 @@ public class SubmitSbomHandler(
         var sbom = new Sbom
         {
             Id = Guid.NewGuid(),
-            Team = command.Team,
-            Project = command.Project,
+            ProductId = command.ProductId,
             Version = command.Version,
             SbomJson = command.SbomJson,
             UploadedAt = DateTime.UtcNow,

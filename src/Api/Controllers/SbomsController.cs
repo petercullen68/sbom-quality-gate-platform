@@ -76,8 +76,7 @@ public class SbomsController(
 
         var command = new SubmitSbomCommand
         {
-            Team = request.Team.Trim(),
-            Project = request.Project.Trim(),
+            ProductId = request.ProductId,
             Version = request.Version.Trim(),
             SbomJson = sbomJson
         };
@@ -98,8 +97,7 @@ public class SbomsController(
         var response = new SbomResponse
         {
             Id = sbom.Id,
-            Team = sbom.Team,
-            Project = sbom.Project,
+            ProductId = sbom.ProductId,
             Version = sbom.Version,
             SpecType = sbom.SpecType,
             SpecVersion = sbom.SpecVersion,
