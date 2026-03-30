@@ -1,5 +1,5 @@
-using System.Globalization;
 using SbomQualityGate.Application.Exceptions;
+using SbomQualityGate.Application.Models;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.UnitTests.Fakes;
 
@@ -11,38 +11,38 @@ public class DiscoverSbomReportHandlerTests
     // Helpers
     // ----------------------------------------------------------------
 
-    private static string BuildReport(
-        string featureSpelling,
-        (string Feature, string Category, bool Ignored)[] features,
-        (string Profile, string Message)[] profiles)
-    {
-        var featuresJson = string.Join(",", features.Select(f =>
-            $$"""{"feature":"{{f.Feature}}","category":"{{f.Category}}","ignored":{{f.Ignored.ToString().ToLower(CultureInfo.InvariantCulture)}}}"""));
-
-        var profilesJson = string.Join(",", profiles.Select(p =>
-            $$"""{"profile":"{{p.Profile}}","score":7.5,"grade":"C","message":"{{p.Message}}"}"""));
-
-        return $$"""
-                 {
-                     "files": [
-                         {
-                             "{{featureSpelling}}": [{{featuresJson}}],
-                             "profiles": [{{profilesJson}}]
-                         }
-                     ]
-                 }
-                 """;
-    }
-
     private static DiscoverSbomReportHandler CreateHandler(
+        FakeReportDiscoveryTool? discoveryTool = null,
         FakeSbomFeatureRepository? featureRepo = null,
         FakeSbomProfileRepository? profileRepo = null,
         FakeUnitOfWork? unitOfWork = null)
     {
+        discoveryTool ??= new FakeReportDiscoveryTool();
         featureRepo ??= new FakeSbomFeatureRepository();
         profileRepo ??= new FakeSbomProfileRepository();
         unitOfWork ??= new FakeUnitOfWork();
-        return new DiscoverSbomReportHandler(featureRepo, profileRepo, unitOfWork);
+
+        return new DiscoverSbomReportHandler(discoveryTool, featureRepo, profileRepo, unitOfWork);
+    }
+
+    private static ReportDiscoveryResult BuildResult(
+        (string Feature, string Category, bool Ignored)[] features,
+        (string Name, string Description)[] profiles)
+    {
+        return new ReportDiscoveryResult
+        {
+            Features = features.Select(f => new DiscoveredFeature
+            {
+                Feature = f.Feature,
+                Category = f.Category,
+                Ignored = f.Ignored
+            }).ToList(),
+            Profiles = profiles.Select(p => new DiscoveredProfile
+            {
+                Name = p.Name,
+                Description = p.Description
+            }).ToList()
+        };
     }
 
     // ----------------------------------------------------------------
@@ -54,49 +54,60 @@ public class DiscoverSbomReportHandlerTests
     {
         var featureRepo = new FakeSbomFeatureRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = CreateHandler(featureRepo: featureRepo, unitOfWork: unitOfWork);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-001", "quality", false), ("SBOM-GQ-002", "quality", false)],
+                [])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [("SBOM-GQ-001", "quality", false), ("SBOM-GQ-002", "quality", false)],
-            []);
+        var handler = CreateHandler(discoveryTool: tool, featureRepo: featureRepo, unitOfWork: unitOfWork);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
+        Assert.True(tool.WasCalled);
         Assert.True(unitOfWork.Executed);
         Assert.True(featureRepo.AddRangeCalled);
         Assert.Equal(2, featureRepo.AddedFeatures.Count);
     }
 
     [Fact]
-    public async Task HandleAsyncCorrectSpellingOfComprehensiveIsSupported()
-    {
-        var featureRepo = new FakeSbomFeatureRepository();
-        var handler = CreateHandler(featureRepo: featureRepo);
-
-        var json = BuildReport("comprehensive",
-            [("SBOM-GQ-003", "licensing", false)],
-            []);
-
-        await handler.HandleAsync(json, CancellationToken.None);
-
-        Assert.Single(featureRepo.AddedFeatures);
-        Assert.Equal("SBOM-GQ-003", featureRepo.AddedFeatures[0].Feature);
-    }
-
-    [Fact]
     public async Task HandleAsyncExistingFeaturesAreNotReAdded()
     {
         var featureRepo = new FakeSbomFeatureRepository("SBOM-GQ-001");
-        var handler = CreateHandler(featureRepo: featureRepo);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-001", "quality", false), ("SBOM-GQ-002", "quality", false)],
+                [])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [("SBOM-GQ-001", "quality", false), ("SBOM-GQ-002", "quality", false)],
-            []);
+        var handler = CreateHandler(discoveryTool: tool, featureRepo: featureRepo);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         Assert.Single(featureRepo.AddedFeatures);
         Assert.Equal("SBOM-GQ-002", featureRepo.AddedFeatures[0].Feature);
+    }
+
+    [Fact]
+    public async Task HandleAsyncFeatureCategoryAndIgnoredAreMappedCorrectly()
+    {
+        var featureRepo = new FakeSbomFeatureRepository();
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-010", "security", true)],
+                [])
+        };
+
+        var handler = CreateHandler(discoveryTool: tool, featureRepo: featureRepo);
+
+        await handler.HandleAsync("{}", CancellationToken.None);
+
+        var feature = Assert.Single(featureRepo.AddedFeatures);
+        Assert.Equal("security", feature.Category);
+        Assert.True(feature.Ignored);
     }
 
     // ----------------------------------------------------------------
@@ -108,32 +119,36 @@ public class DiscoverSbomReportHandlerTests
     {
         var profileRepo = new FakeSbomProfileRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = CreateHandler(profileRepo: profileRepo, unitOfWork: unitOfWork);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [],
+                [("NTIA Minimum Elements (2021)", "NTIA Profile"), ("BSI TR-03183-2 v1.1", "BSI Profile")])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [],
-            [("NTIA Minimum Elements (2021)", "NTIA Profile"), ("BSI TR-03183-2 v1.1", "BSI Profile")]);
+        var handler = CreateHandler(discoveryTool: tool, profileRepo: profileRepo, unitOfWork: unitOfWork);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         Assert.True(unitOfWork.Executed);
         Assert.True(profileRepo.AddRangeCalled);
         Assert.Equal(2, profileRepo.AddedProfiles.Count);
-        Assert.Contains(profileRepo.AddedProfiles, p => p.Name == "NTIA Minimum Elements (2021)");
-        Assert.Contains(profileRepo.AddedProfiles, p => p.Name == "BSI TR-03183-2 v1.1");
     }
 
     [Fact]
     public async Task HandleAsyncProfilesAreMarkedAsNotUserDefined()
     {
         var profileRepo = new FakeSbomProfileRepository();
-        var handler = CreateHandler(profileRepo: profileRepo);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [],
+                [("Interlynk", "Interlynk Scoring Profile")])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [],
-            [("Interlynk", "Interlynk Scoring Profile")]);
+        var handler = CreateHandler(discoveryTool: tool, profileRepo: profileRepo);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         var profile = Assert.Single(profileRepo.AddedProfiles);
         Assert.False(profile.IsUserDefined);
@@ -144,35 +159,23 @@ public class DiscoverSbomReportHandlerTests
     public async Task HandleAsyncExistingProfilesAreNotReAdded()
     {
         var profileRepo = new FakeSbomProfileRepository(existingProfiles: "Interlynk");
-        var handler = CreateHandler(profileRepo: profileRepo);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [],
+                [("Interlynk", "Interlynk Scoring Profile"), ("BSI TR-03183-2 v1.1", "BSI Profile")])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [],
-            [("Interlynk", "Interlynk Scoring Profile"), ("BSI TR-03183-2 v1.1", "BSI Profile")]);
+        var handler = CreateHandler(discoveryTool: tool, profileRepo: profileRepo);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         Assert.Single(profileRepo.AddedProfiles);
         Assert.Equal("BSI TR-03183-2 v1.1", profileRepo.AddedProfiles[0].Name);
     }
 
-    [Fact]
-    public async Task HandleAsyncDuplicateProfilesInSamePayloadAreDeduped()
-    {
-        var profileRepo = new FakeSbomProfileRepository();
-        var handler = CreateHandler(profileRepo: profileRepo);
-
-        var json = BuildReport("comprehenssive",
-            [],
-            [("Interlynk", "Interlynk Scoring Profile"), ("Interlynk", "Interlynk Scoring Profile")]);
-
-        await handler.HandleAsync(json, CancellationToken.None);
-
-        Assert.Single(profileRepo.AddedProfiles);
-    }
-
     // ----------------------------------------------------------------
-    // Combined - features and profiles together
+    // Combined
     // ----------------------------------------------------------------
 
     [Fact]
@@ -181,13 +184,16 @@ public class DiscoverSbomReportHandlerTests
         var featureRepo = new FakeSbomFeatureRepository();
         var profileRepo = new FakeSbomProfileRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = CreateHandler(featureRepo, profileRepo, unitOfWork);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-001", "quality", false)],
+                [("Interlynk", "Interlynk Scoring Profile")])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [("SBOM-GQ-001", "quality", false)],
-            [("Interlynk", "Interlynk Scoring Profile")]);
+        var handler = CreateHandler(tool, featureRepo, profileRepo, unitOfWork);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         Assert.True(unitOfWork.Executed);
         Assert.Single(featureRepo.AddedFeatures);
@@ -200,13 +206,16 @@ public class DiscoverSbomReportHandlerTests
         var featureRepo = new FakeSbomFeatureRepository("SBOM-GQ-001");
         var profileRepo = new FakeSbomProfileRepository(existingProfiles: "Interlynk");
         var unitOfWork = new FakeUnitOfWork();
-        var handler = CreateHandler(featureRepo, profileRepo, unitOfWork);
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-001", "quality", false)],
+                [("Interlynk", "Interlynk Scoring Profile")])
+        };
 
-        var json = BuildReport("comprehenssive",
-            [("SBOM-GQ-001", "quality", false)],
-            [("Interlynk", "Interlynk Scoring Profile")]);
+        var handler = CreateHandler(tool, featureRepo, profileRepo, unitOfWork);
 
-        await handler.HandleAsync(json, CancellationToken.None);
+        await handler.HandleAsync("{}", CancellationToken.None);
 
         Assert.False(unitOfWork.Executed);
         Assert.False(featureRepo.AddRangeCalled);
@@ -218,39 +227,34 @@ public class DiscoverSbomReportHandlerTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
+    public async Task HandleAsyncDiscoveryToolThrowsRequestValidationException()
     {
-        var handler = CreateHandler();
+        var tool = new FakeReportDiscoveryTool { ShouldThrow = true };
+        var handler = CreateHandler(discoveryTool: tool);
 
         var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
-            handler.HandleAsync("not-json", CancellationToken.None));
+            handler.HandleAsync("{}", CancellationToken.None));
 
-        Assert.Contains("Invalid JSON payload", ex.Message);
-    }
-
-    [Fact]
-    public async Task HandleAsyncMissingFilesArrayThrowsRequestValidationException()
-    {
-        var handler = CreateHandler();
-
-        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
-            handler.HandleAsync("""{ "other": [] }""", CancellationToken.None));
-
-        Assert.Contains("files", ex.Message);
+        Assert.Contains("Simulated discovery tool failure", ex.Message);
     }
 
     [Fact]
     public async Task HandleAsyncCancellationTokenIsRespected()
     {
-        var handler = CreateHandler();
+        var featureRepo = new FakeSbomFeatureRepository();
+        var tool = new FakeReportDiscoveryTool
+        {
+            ResultToReturn = BuildResult(
+                [("SBOM-GQ-001", "quality", false)],
+                [])
+        };
+
+        var handler = CreateHandler(discoveryTool: tool, featureRepo: featureRepo);
+
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var json = BuildReport("comprehenssive",
-            [("SBOM-GQ-001", "quality", false)],
-            [("Interlynk", "Interlynk Scoring Profile")]);
-
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            handler.HandleAsync(json, cts.Token));
+            handler.HandleAsync("{}", cts.Token));
     }
 }

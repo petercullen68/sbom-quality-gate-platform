@@ -9,6 +9,7 @@ using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Seed;
+using SbomQualityGate.Infrastructure.Validation;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -97,6 +98,7 @@ builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
+
 //
 // ------------------------------
 // Application (Use Cases)
@@ -104,6 +106,7 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 //
 
 builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
+builder.Services.AddSingleton<IReportDiscoveryTool, SbomQsReportDiscoveryTool>();
 builder.Services.AddScoped<DiscoverSbomReportHandler>();
 
 // ------------------------------
