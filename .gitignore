@@ -16,6 +16,9 @@ LocalTests/
 *.userosscache
 *.sln.docstates
 
+# Dev condfiguration files
+*.Development.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
