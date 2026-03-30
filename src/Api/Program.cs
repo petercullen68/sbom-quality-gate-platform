@@ -8,6 +8,7 @@ using SbomQualityGate.Api.Logging;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
+using SbomQualityGate.Infrastructure.Seed;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -90,8 +91,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ISbomFeatureRepository, SbomFeatureRepository>();
+builder.Services.AddScoped<ISbomProfileRepository, SbomProfileRepository>();
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
+builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
 //
 // ------------------------------
@@ -100,7 +104,13 @@ builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 //
 
 builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
-builder.Services.AddScoped<DiscoverSbomFeaturesHandler>();
+builder.Services.AddScoped<DiscoverSbomReportHandler>();
+
+// ------------------------------
+// Seed Data
+// ------------------------------
+//
+builder.Services.AddHostedService<SeedDataService>();
 
 //
 // ------------------------------

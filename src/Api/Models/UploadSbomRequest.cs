@@ -8,10 +8,7 @@ public sealed class UploadSbomRequest
     public IFormFile? File { get; init; }
 
     [Required]
-    public string Team { get; init; } = string.Empty;
-
-    [Required]
-    public string Project { get; init; } = string.Empty;
+    public Guid ProductId { get; init; }
 
     [Required]
     public string Version { get; init; } = string.Empty;

@@ -4,9 +4,7 @@ public sealed class SbomResponse
 {
     public Guid Id { get; init; }
 
-    public string Team { get; init; } = string.Empty;
-
-    public string Project { get; init; } = string.Empty;
+    public Guid ProductId { get; init; }
 
     public string Version { get; init; } = string.Empty;
 

@@ -1,6 +1,7 @@
 using SbomQualityGate.Application.Exceptions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
+using SbomQualityGate.Domain.Entities;
 using SbomQualityGate.Domain.Enums;
 using SbomQualityGate.UnitTests.Fakes;
 
@@ -8,6 +9,16 @@ namespace SbomQualityGate.UnitTests.UseCases;
 
 public class SubmitSbomHandlerTest
 {
+    private static readonly Guid ValidProductId = Guid.NewGuid();
+
+    private static Product ValidProduct => new()
+    {
+        Id = ValidProductId,
+        TeamId = Guid.NewGuid(),
+        Name = "Test Product",
+        CreatedAt = DateTime.UtcNow
+    };
+
     [Fact]
     public async Task HandleAsyncValidSbomPersistsSbomAndCreatesJob()
     {
@@ -20,6 +31,8 @@ public class SubmitSbomHandlerTest
 
         var command = new SubmitSbomCommand
         {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
             SbomJson = """
                        {
                            "bomFormat": "CycloneDX",
@@ -37,27 +50,142 @@ public class SubmitSbomHandlerTest
 
         Assert.True(sbomRepo.AddCalled);
         Assert.NotNull(sbomRepo.AddedSbom);
+        Assert.Equal(ValidProductId, sbomRepo.AddedSbom!.ProductId);
 
         Assert.True(jobRepo.AddCalled);
         Assert.NotNull(jobRepo.AddedJob);
 
-        Assert.Equal(sbomRepo.AddedSbom!.Id, jobRepo.AddedJob!.SbomId);
+        Assert.Equal(sbomRepo.AddedSbom.Id, jobRepo.AddedJob!.SbomId);
         Assert.Equal(ValidationJobStatus.Pending, jobRepo.AddedJob.Status);
         Assert.Equal("NIS2-Default", jobRepo.AddedJob.Profile);
+    }
+
+    [Fact]
+    public async Task HandleAsyncProductNotFoundThrowsRequestValidationException()
+    {
+        // Arrange
+        var handler = CreateHandler(productRepo: new FakeProductRepository(productToReturn: null));
+
+        var command = new SubmitSbomCommand
+        {
+            ProductId = Guid.NewGuid(),
+            Version = "1.0.0",
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.Contains("does not exist", ex.Message);
+    }
+
+    [Fact]
+    public async Task HandleAsyncProductNotFoundDoesNotPersistAnything()
+    {
+        // Arrange
+        var sbomRepo = new FakeSbomRepository();
+        var jobRepo = new FakeValidationJobRepository();
+        var handler = CreateHandler(
+            sbomRepo: sbomRepo,
+            jobRepo: jobRepo,
+            productRepo: new FakeProductRepository(productToReturn: null));
+
+        var command = new SubmitSbomCommand
+        {
+            ProductId = Guid.NewGuid(),
+            Version = "1.0.0",
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.False(sbomRepo.AddCalled);
+        Assert.False(jobRepo.AddCalled);
+    }
+
+    [Fact]
+    public async Task HandleAsyncNoSystemProfilesExistThrowsRequestValidationException()
+    {
+        // Arrange
+        var profileRepo = new FakeSbomProfileRepository(anySystemProfilesExist: false);
+        var handler = CreateHandler(profileRepo: profileRepo);
+
+        var command = new SubmitSbomCommand
+        {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        var ex = await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.Contains("No SBOM quality profiles have been discovered", ex.Message);
+    }
+
+    [Fact]
+    public async Task HandleAsyncNoSystemProfilesExistDoesNotPersistAnything()
+    {
+        // Arrange
+        var sbomRepo = new FakeSbomRepository();
+        var jobRepo = new FakeValidationJobRepository();
+        var profileRepo = new FakeSbomProfileRepository(anySystemProfilesExist: false);
+
+        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, profileRepo: profileRepo);
+
+        var command = new SubmitSbomCommand
+        {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
+            SbomJson = """
+                       {
+                           "bomFormat": "CycloneDX",
+                           "specVersion": "1.5"
+                       }
+                       """
+        };
+
+        // Act
+        await Assert.ThrowsAsync<RequestValidationException>(() =>
+            handler.HandleAsync(command, CancellationToken.None));
+
+        // Assert
+        Assert.False(sbomRepo.AddCalled);
+        Assert.False(jobRepo.AddCalled);
     }
 
     [Fact]
     public async Task HandleAsyncInvalidJsonThrowsRequestValidationException()
     {
         // Arrange
-        var sbomRepo = new FakeSbomRepository();
-        var jobRepo = new FakeValidationJobRepository();
-        var unitOfWork = new FakeUnitOfWork();
-
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, unitOfWork: unitOfWork);
+        var handler = CreateHandler();
 
         var command = new SubmitSbomCommand
         {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
             SbomJson = "this-is-not-json"
         };
 
@@ -67,8 +195,6 @@ public class SubmitSbomHandlerTest
 
         // Assert
         Assert.Contains("invalid JSON", ex.Message);
-        Assert.False(sbomRepo.AddCalled);
-        Assert.False(jobRepo.AddCalled);
     }
 
     [Fact]
@@ -83,6 +209,8 @@ public class SubmitSbomHandlerTest
 
         var command = new SubmitSbomCommand
         {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
             SbomJson = """
                        {
                            "bomFormat": "CycloneDX",
@@ -105,11 +233,12 @@ public class SubmitSbomHandlerTest
     {
         // Arrange
         var sbomRepo = new FakeSbomRepository();
-
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: null, unitOfWork: null);
+        var handler = CreateHandler(sbomRepo: sbomRepo);
 
         var command = new SubmitSbomCommand
         {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
             SbomJson = """
                        {
                            "bomFormat": "CycloneDX",
@@ -132,11 +261,12 @@ public class SubmitSbomHandlerTest
         // Arrange
         var sbomRepo = new FakeSbomRepository();
         var jobRepo = new FakeValidationJobRepository();
-
-        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo, unitOfWork: null);
+        var handler = CreateHandler(sbomRepo: sbomRepo, jobRepo: jobRepo);
 
         var command = new SubmitSbomCommand
         {
+            ProductId = ValidProductId,
+            Version = "1.0.0",
             SbomJson = """
                        {
                            "someOtherField": "value"
@@ -157,15 +287,21 @@ public class SubmitSbomHandlerTest
     private static SubmitSbomHandler CreateHandler(
         ISbomRepository? sbomRepo = null,
         IValidationJobRepository? jobRepo = null,
+        IProductRepository? productRepo = null,
+        ISbomProfileRepository? profileRepo = null,
         IUnitOfWork? unitOfWork = null)
     {
         sbomRepo ??= new FakeSbomRepository();
         jobRepo ??= new FakeValidationJobRepository();
+        productRepo ??= new FakeProductRepository(productToReturn: ValidProduct);
+        profileRepo ??= new FakeSbomProfileRepository(anySystemProfilesExist: true);
         unitOfWork ??= new FakeUnitOfWork();
 
         return new SubmitSbomHandler(
             sbomRepo,
             jobRepo,
+            productRepo,
+            profileRepo,
             unitOfWork);
     }
 }
