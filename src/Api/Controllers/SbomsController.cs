@@ -25,6 +25,12 @@ public class SbomsController(
 
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Security",
+        "SCS0016:Potential CSRF vulnerability",
+        Justification = "Acknowledged. multipart/form-data is CSRF-susceptible without auth. " +
+                        "Proper closure is bearer token authentication (planned). " +
+                        "Suppress until auth is implemented.")]
     public async Task<IActionResult> Upload(
         [FromForm] UploadSbomRequest request,
         CancellationToken cancellationToken)

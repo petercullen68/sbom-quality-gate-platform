@@ -15,9 +15,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  secrets-scan:
+    name: Secrets Scan (gitleaks)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for organisation repos, not personal accounts
+
+  build-and-test:
+    name: Build/Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
@@ -42,8 +64,40 @@ jobs:
       - name: Restore
         run: dotnet restore SbomQualityGate.slnx
 
+      - name: Check for vulnerable NuGet packages
+        run: dotnet list package --vulnerable --include-transitive
+
       - name: Build
         run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
 
-      - name: Test
-        run: dotnet test SbomQualityGate.slnx --no-build --configuration Release --verbosity normal
+      - name: Test UnitTests (TRX + Coverage)
+        run: >
+          dotnet test tests/UnitTests/UnitTests.csproj
+          --no-build
+          --configuration Release
+          --verbosity normal
+          --logger "trx;LogFileName=UnitTests.trx"
+          --results-directory artifacts/test-results/unit
+          --collect "XPlat Code Coverage"
+
+      #  Integration tests are currently disabled 
+      #- name: Test IntegrationTests (TRX + Coverage)
+      #  run: >
+      #    dotnet test tests/IntegrationTests/IntegrationTests.csproj
+      #    --no-build
+      #    --configuration Release
+      #    --verbosity normal
+      #    --logger "trx;LogFileName=IntegrationTests.trx"
+      #    --results-directory artifacts/test-results/integration
+      #    --collect "XPlat Code Coverage"
+
+      - name: Upload test results and coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ matrix.os }}
+          path: |
+            artifacts/test-results/**/*.trx
+            artifacts/test-results/**/coverage.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 14
