@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "Default": "Host=<host>;Database=<database>;Username=<username>;Password=<password>"
+  }
+}

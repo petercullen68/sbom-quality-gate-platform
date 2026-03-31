@@ -3,24 +3,19 @@ using System.Globalization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using SbomQualityGate.Api.Configuration;
 using SbomQualityGate.Api.Logging;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Seed;
+using SbomQualityGate.Infrastructure.Telemetry;
 using SbomQualityGate.Infrastructure.Validation;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//
-// ------------------------------
-// Configuration
-// ------------------------------
-//
-
-var connectionString = builder.Configuration.GetConnectionString("Default");
 
 // Bind and validate upload settings once at startup.
 builder.Services
@@ -32,6 +27,17 @@ builder.Services
 var uploadOptions = builder.Configuration
     .GetSection(UploadOptions.SectionName)
     .Get<UploadOptions>() ?? new UploadOptions();
+
+//
+// ------------------------------
+// Configuration
+// ------------------------------
+//
+var connectionString = builder.Configuration.GetConnectionString("Default");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'Default' is missing or empty.");
+}
 
 
 //
@@ -51,6 +57,18 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// ------------------------------
+// Telemetry - OpenTelemetry
+// ------------------------------
+ 
+// API Program.cs — common + AspNetCore instrumentation
+builder.AddSbomQualityGateTelemetry();
+ 
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation());
 //
 // ------------------------------
 // // Global upload/request body limits
@@ -197,6 +215,10 @@ app.MapControllers();
 try
 {
     app.Run();
+}
+catch (HostAbortedException)
+{
+    throw; // important for WebApplicationFactory/test host lifecycle
 }
 catch (Exception ex)
 {
