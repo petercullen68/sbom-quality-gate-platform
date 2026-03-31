@@ -8,6 +8,7 @@ using SbomQualityGate.Application.UseCases;
 
 namespace SbomQualityGate.IntegrationTests.Tests;
 
+[Collection("IntegrationTests")]
 public class SubmitSbomTests : IntegrationTestBase
 {
     private static readonly string ReportJson = """

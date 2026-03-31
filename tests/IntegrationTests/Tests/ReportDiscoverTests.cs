@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SbomQualityGate.IntegrationTests.Tests;
 
+[Collection("IntegrationTests")]
 public class ReportDiscoverTests : IntegrationTestBase
 {
     private static readonly string ReportJson = """

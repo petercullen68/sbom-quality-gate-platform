@@ -13,20 +13,19 @@ public class SbomQualityGateApiFactory : WebApplicationFactory<Program>
 {
     public SbomQualityGateApiFactory()
     {
-        // Read test config before the API's WebApplication.CreateBuilder runs.
-        // Setting as process environment variable ensures it is picked up by
-        // the API's own config pipeline which we cannot intercept directly.
+        // In CI the connection string is injected via environment variable.
+        // Locally it comes from appsettings.Test.json (gitignored).
+        if (Environment.GetEnvironmentVariable("ConnectionStrings__Default") is not null) return;
         var config = new ConfigurationBuilder()
             .AddJsonFile(
                 Path.Combine(AppContext.BaseDirectory, "appsettings.Test.json"),
                 optional: false,
                 reloadOnChange: false)
-            .AddEnvironmentVariables()
             .Build();
 
         var connectionString = config.GetConnectionString("Default")
-            ?? throw new InvalidOperationException(
-                "Integration test connection string 'Default' not found in appsettings.Test.json.");
+                               ?? throw new InvalidOperationException(
+                                   "Integration test connection string 'Default' not found in appsettings.Test.json.");
 
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", connectionString);
     }
@@ -61,18 +60,29 @@ public class SbomQualityGateApiFactory : WebApplicationFactory<Program>
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        // Delete in FK dependency order — children before parents
         context.ValidationResults.RemoveRange(context.ValidationResults);
-        context.ValidationJobs.RemoveRange(context.ValidationJobs);
-        context.Sboms.RemoveRange(context.Sboms);
-        context.SbomFeatures.RemoveRange(context.SbomFeatures);
-        context.SbomProfiles.RemoveRange(context.SbomProfiles);
-        context.TeamMembers.RemoveRange(context.TeamMembers);
-        context.Products.RemoveRange(context.Products);
-        context.Teams.RemoveRange(context.Teams);
-
         await context.SaveChangesAsync();
 
-        // Re-seed defaults after reset
+        context.ValidationJobs.RemoveRange(context.ValidationJobs);
+        await context.SaveChangesAsync();
+
+        context.Sboms.RemoveRange(context.Sboms);
+        await context.SaveChangesAsync();
+
+        context.SbomFeatures.RemoveRange(context.SbomFeatures);
+        context.SbomProfiles.RemoveRange(context.SbomProfiles);
+        await context.SaveChangesAsync();
+
+        context.TeamMembers.RemoveRange(context.TeamMembers);
+        await context.SaveChangesAsync();
+
+        context.Products.RemoveRange(context.Products);
+        await context.SaveChangesAsync();
+
+        context.Teams.RemoveRange(context.Teams);
+        await context.SaveChangesAsync();
+
         await SeedDefaultDataAsync(context);
     }
 
