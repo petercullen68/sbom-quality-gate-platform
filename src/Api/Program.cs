@@ -17,14 +17,6 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//
-// ------------------------------
-// Configuration
-// ------------------------------
-//
-
-var connectionString = builder.Configuration.GetConnectionString("Default");
-
 // Bind and validate upload settings once at startup.
 builder.Services
     .AddOptions<UploadOptions>()
@@ -35,6 +27,17 @@ builder.Services
 var uploadOptions = builder.Configuration
     .GetSection(UploadOptions.SectionName)
     .Get<UploadOptions>() ?? new UploadOptions();
+
+//
+// ------------------------------
+// Configuration
+// ------------------------------
+//
+var connectionString = builder.Configuration.GetConnectionString("Default");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'Default' is missing or empty.");
+}
 
 
 //
@@ -212,6 +215,10 @@ app.MapControllers();
 try
 {
     app.Run();
+}
+catch (HostAbortedException)
+{
+    throw; // important for WebApplicationFactory/test host lifecycle
 }
 catch (Exception ex)
 {

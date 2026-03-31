@@ -17,7 +17,10 @@ LocalTests/
 *.sln.docstates
 
 # Dev condfiguration files
-*.Development.json
+appsettings.Development.json
+appsettings.Test.json
+appsettings.Test
+
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

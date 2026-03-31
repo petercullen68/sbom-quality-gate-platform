@@ -29,7 +29,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # GITLEAKS_LICENSE is only required for organisation repos, not personal accounts
 
   build-and-test:
     name: Build/Test (${{ matrix.os }})
@@ -80,22 +79,78 @@ jobs:
           --results-directory artifacts/test-results/unit
           --collect "XPlat Code Coverage"
 
-      #  Integration tests are currently disabled 
-      #- name: Test IntegrationTests (TRX + Coverage)
-      #  run: >
-      #    dotnet test tests/IntegrationTests/IntegrationTests.csproj
-      #    --no-build
-      #    --configuration Release
-      #    --verbosity normal
-      #    --logger "trx;LogFileName=IntegrationTests.trx"
-      #    --results-directory artifacts/test-results/integration
-      #    --collect "XPlat Code Coverage"
-
       - name: Upload test results and coverage artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-artifacts-${{ matrix.os }}
+          path: |
+            artifacts/test-results/**/*.trx
+            artifacts/test-results/**/coverage.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: build-and-test
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: sbomdb_tests
+          POSTGRES_USER: sbomintegrationtest
+          POSTGRES_PASSWORD: ${{ secrets.INTEGRATION_TEST_DB_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET SDK from global.json
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: |
+            global.json
+            Directory.Packages.props
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: Restore
+        run: dotnet restore SbomQualityGate.slnx
+
+      - name: Build
+        run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
+
+      - name: Test IntegrationTests (TRX + Coverage)
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=sbomdb_tests;Username=sbomintegrationtest;Password=${{ secrets.INTEGRATION_TEST_DB_PASSWORD }}"
+        run: >
+          dotnet test tests/IntegrationTests/IntegrationTests.csproj
+          --no-build
+          --configuration Release
+          --verbosity normal
+          --logger "trx;LogFileName=IntegrationTests.trx"
+          --results-directory artifacts/test-results/integration
+          --collect "XPlat Code Coverage"
+
+      - name: Upload integration test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-integration
           path: |
             artifacts/test-results/**/*.trx
             artifacts/test-results/**/coverage.cobertura.xml
