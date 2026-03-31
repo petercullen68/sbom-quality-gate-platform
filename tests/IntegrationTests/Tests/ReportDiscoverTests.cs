@@ -2,36 +2,33 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using SbomQualityGate.IntegrationTests.Infrastructure;
 
 namespace SbomQualityGate.IntegrationTests.Tests;
 
 [Collection("IntegrationTests")]
-public class ReportDiscoverTests : IntegrationTestBase
+public class ReportDiscoverTests(SbomQualityGateApiFactory factory)
+    : IntegrationTestBase(factory)
 {
-    private static readonly string ReportJson = """
-        {
-          "run_id": "59da3d1a-27c0-4c83-a87b-fb8970e9bc54",
-          "timestamp": "2026-03-22T15:17:02Z",
-          "files": [
-            {
-              "sbom_quality_score": 5.54,
-              "grade": "D",
-              "num_components": 1600,
-              "comprehenssive": [
-                { "category": "Identification", "feature": "comp_with_name",    "score": 10, "ignored": false },
-                { "category": "Identification", "feature": "comp_with_version", "score": 10, "ignored": false },
-                { "category": "Provenance",     "feature": "sbom_authors",      "score": 0,  "ignored": false },
-                { "category": "Integrity",      "feature": "sbom_signature",    "score": 0,  "ignored": true  }
-              ],
-              "profiles": [
-                { "profile": "Interlynk",                    "score": 5.82, "grade": "D", "message": "Interlynk Scoring Profile" },
-                { "profile": "NTIA Minimum Elements (2021)", "score": 8.57, "grade": "B", "message": "NTIA Minimum Elements Profile" },
-                { "profile": "BSI TR-03183-2 v1.1",          "score": 6.36, "grade": "D", "message": "BSI TR-03183-2 v1.1 Profile" }
-              ]
-            }
-          ]
-        }
-        """;
+    private const string ReportJson = """
+                                      {
+                                        "files": [
+                                          {
+                                            "comprehenssive": [
+                                              { "category": "Identification", "feature": "comp_with_name",    "score": 10, "ignored": false },
+                                              { "category": "Identification", "feature": "comp_with_version", "score": 10, "ignored": false },
+                                              { "category": "Provenance",     "feature": "sbom_authors",      "score": 0,  "ignored": false },
+                                              { "category": "Integrity",      "feature": "sbom_signature",    "score": 0,  "ignored": true  }
+                                            ],
+                                            "profiles": [
+                                              { "profile": "Interlynk",                    "score": 5.82, "grade": "D", "message": "Interlynk Scoring Profile" },
+                                              { "profile": "NTIA Minimum Elements (2021)", "score": 8.57, "grade": "B", "message": "NTIA Minimum Elements Profile" },
+                                              { "profile": "BSI TR-03183-2 v1.1",          "score": 6.36, "grade": "D", "message": "BSI TR-03183-2 v1.1 Profile" }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                      """;
 
     [Fact]
     public async Task DiscoverReportReturns200()

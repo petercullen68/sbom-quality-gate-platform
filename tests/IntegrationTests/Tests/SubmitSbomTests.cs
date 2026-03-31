@@ -5,41 +5,43 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SbomQualityGate.Application.UseCases;
+using SbomQualityGate.IntegrationTests.Infrastructure;
 
 namespace SbomQualityGate.IntegrationTests.Tests;
 
 [Collection("IntegrationTests")]
-public class SubmitSbomTests : IntegrationTestBase
+public class SubmitSbomTests(SbomQualityGateApiFactory factory)
+    : IntegrationTestBase(factory)
 {
-    private static readonly string ReportJson = """
-        {
-          "files": [
-            {
-              "comprehenssive": [
-                { "category": "Identification", "feature": "comp_with_name", "score": 10, "ignored": false }
-              ],
-              "profiles": [
-                { "profile": "Interlynk", "score": 5.82, "grade": "D", "message": "Interlynk Scoring Profile" }
-              ]
-            }
-          ]
-        }
-        """;
+    private const string ReportJson = """
+                                      {
+                                        "files": [
+                                          {
+                                            "comprehenssive": [
+                                              { "category": "Identification", "feature": "comp_with_name", "score": 10, "ignored": false }
+                                            ],
+                                            "profiles": [
+                                              { "profile": "Interlynk", "score": 5.82, "grade": "D", "message": "Interlynk Scoring Profile" }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                      """;
 
-    private static readonly string CycloneDxSbom = """
-        {
-            "bomFormat": "CycloneDX",
-            "specVersion": "1.5",
-            "components": []
-        }
-        """;
+    private const string CycloneDxSbom = """
+                                         {
+                                             "bomFormat": "CycloneDX",
+                                             "specVersion": "1.5",
+                                             "components": []
+                                         }
+                                         """;
 
-    private static readonly string SpdxSbom = """
-        {
-            "spdxVersion": "SPDX-2.3",
-            "packages": []
-        }
-        """;
+    private const string SpdxSbom = """
+                                    {
+                                        "spdxVersion": "SPDX-2.3",
+                                        "packages": []
+                                    }
+                                    """;
 
     private Guid _productId;
 

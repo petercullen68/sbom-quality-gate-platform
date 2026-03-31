@@ -9,33 +9,35 @@ using SbomQualityGate.Infrastructure.Seed;
 
 namespace SbomQualityGate.IntegrationTests.Infrastructure;
 
-public class SbomQualityGateApiFactory : WebApplicationFactory<Program>
+public class SbomQualityGateApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public SbomQualityGateApiFactory()
     {
         // In CI the connection string is injected via environment variable.
         // Locally it comes from appsettings.Test.json (gitignored).
-        if (Environment.GetEnvironmentVariable("ConnectionStrings__Default") is not null) return;
-        var config = new ConfigurationBuilder()
-            .AddJsonFile(
-                Path.Combine(AppContext.BaseDirectory, "appsettings.Test.json"),
-                optional: false,
-                reloadOnChange: false)
-            .Build();
+        if (Environment.GetEnvironmentVariable("ConnectionStrings__Default") is null)
+        {
+            var config = new ConfigurationBuilder()
+                .AddJsonFile(
+                    Path.Combine(AppContext.BaseDirectory, "appsettings.Test.json"),
+                    optional: false,
+                    reloadOnChange: false)
+                .Build();
 
-        var connectionString = config.GetConnectionString("Default")
-                               ?? throw new InvalidOperationException(
-                                   "Integration test connection string 'Default' not found in appsettings.Test.json.");
+            var connectionString = config.GetConnectionString("Default")
+                ?? throw new InvalidOperationException(
+                    "Integration test connection string 'Default' not found in appsettings.Test.json.");
 
-        Environment.SetEnvironmentVariable("ConnectionStrings__Default", connectionString);
+            Environment.SetEnvironmentVariable("ConnectionStrings__Default", connectionString);
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
-            // Suppress SeedDataService — we seed explicitly in InitialiseDatabaseAsync
-            // so we have full control over test data
+            // Suppress SeedDataService — we seed explicitly so we have
+            // full control over test data
             var descriptor = services.SingleOrDefault(
                 d => d.ImplementationType == typeof(SeedDataService));
 
@@ -46,14 +48,16 @@ public class SbomQualityGateApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Test");
     }
 
-    public async Task InitialiseDatabaseAsync()
+    // IAsyncLifetime — runs once when the fixture is created
+    // Migrations run here so the schema exists before any test runs
+    public async Task InitializeAsync()
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
         await context.Database.MigrateAsync();
-        await SeedDefaultDataAsync(context);
     }
+
+    public new Task DisposeAsync() => base.DisposeAsync().AsTask();
 
     public async Task ResetDatabaseAsync()
     {
