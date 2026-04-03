@@ -122,7 +122,9 @@ namespace SbomQualityGate.Infrastructure.Migrations
                     Score = table.Column<double>(type: "double precision", nullable: false),
                     Profile = table.Column<string>(type: "text", nullable: false),
                     ReportJson = table.Column<string>(type: "jsonb", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsSpecConformant = table.Column<bool>(type: "boolean", nullable: false),
+                    DeprecationWarnings = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -133,6 +135,38 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         principalTable: "ValidationJobs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ConformancePolicies",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    SpecType = table.Column<string>(type: "text", nullable: false),
+                    MinSpecVersion = table.Column<string>(type: "text", nullable: false),
+                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConformancePolicies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConformancePolicies_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ConformancePolicies_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -158,6 +192,109 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "PolicyEvaluationResults",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ValidationResultId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PolicyId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PolicyName = table.Column<string>(type: "text", nullable: false),
+                    EvaluatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ViolationsJson = table.Column<string>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PolicyEvaluationResults", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PolicyEvaluationResults_ValidationResults_ValidationResultId",
+                        column: x => x.ValidationResultId,
+                        principalTable: "ValidationResults",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PolicyTiers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PolicyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Severity = table.Column<int>(type: "integer", nullable: false),
+                    EnforcementDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PolicyTiers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PolicyTiers_ConformancePolicies_PolicyId",
+                        column: x => x.PolicyId,
+                        principalTable: "ConformancePolicies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PolicyRules",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PolicyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TierId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JsonPath = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PolicyRules", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PolicyRules_ConformancePolicies_PolicyId",
+                        column: x => x.PolicyId,
+                        principalTable: "ConformancePolicies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PolicyRules_PolicyTiers_TierId",
+                        column: x => x.TierId,
+                        principalTable: "PolicyTiers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConformancePolicies_ProductId",
+                table: "ConformancePolicies",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConformancePolicies_TeamId",
+                table: "ConformancePolicies",
+                column: "TeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PolicyEvaluationResults_ValidationResultId",
+                table: "PolicyEvaluationResults",
+                column: "ValidationResultId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PolicyRules_PolicyId",
+                table: "PolicyRules",
+                column: "PolicyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PolicyRules_TierId",
+                table: "PolicyRules",
+                column: "TierId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PolicyTiers_PolicyId",
+                table: "PolicyTiers",
+                column: "PolicyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_TeamId_Name",
@@ -209,6 +346,12 @@ namespace SbomQualityGate.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "PolicyEvaluationResults");
+
+            migrationBuilder.DropTable(
+                name: "PolicyRules");
+
+            migrationBuilder.DropTable(
                 name: "SbomFeatures");
 
             migrationBuilder.DropTable(
@@ -224,10 +367,16 @@ namespace SbomQualityGate.Infrastructure.Migrations
                 name: "ValidationResults");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "PolicyTiers");
 
             migrationBuilder.DropTable(
                 name: "ValidationJobs");
+
+            migrationBuilder.DropTable(
+                name: "ConformancePolicies");
+
+            migrationBuilder.DropTable(
+                name: "Products");
 
             migrationBuilder.DropTable(
                 name: "Teams");

@@ -6,7 +6,7 @@ using SbomQualityGate.Application.UseCases;
 namespace SbomQualityGate.Api.Controllers;
 
 [ApiController]
-[Route("api/report")]
+[Route("api/[controller]")]
 public class ReportController(
     DiscoverSbomReportHandler handler) : ControllerBase
 {

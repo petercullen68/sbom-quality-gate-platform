@@ -21,7 +21,6 @@ var builder = Host.CreateApplicationBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
 
-
 //
 // ------------------------------
 // Logging - Serilog
@@ -78,6 +77,7 @@ builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddSingleton<SchemaCache>();
 
 // ------------------------------
 // Infrastructure (External Tools)

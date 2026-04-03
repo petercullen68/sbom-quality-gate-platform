@@ -14,4 +14,8 @@ public class ValidationResult
     public string Profile { get; init; } = string.Empty;
     public string ReportJson { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
+    
+    public bool IsSpecConformant { get; init; }
+    
+    public string[] DeprecationWarnings { get; init; } = [];
 }
