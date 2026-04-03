@@ -10,6 +10,147 @@ namespace SbomQualityGate.UnitTests.UseCases;
 public class ProcessNextValidationJobHandlerTests
 {
     [Fact]
+public async Task HandleAsyncSpecConformanceToolIsCalledWithCorrectSpecTypeAndVersion()
+{
+    // Arrange
+    var sbomId = Guid.NewGuid();
+
+    var jobRepo = new FakeValidationJobRepository
+    {
+        JobToReturn = new ValidationJob
+        {
+            Id = Guid.NewGuid(),
+            SbomId = sbomId,
+            Status = ValidationJobStatus.Pending
+        }
+    };
+
+    var sbomRepo = new FakeSbomRepository
+    {
+        GetByIdFunc = _ => new Sbom
+        {
+            Id = sbomId,
+            SbomJson = "{}",
+            SpecType = "CycloneDX",
+            SpecVersion = "1.6"
+        }
+    };
+
+    var specConformanceTool = new FakeSpecConformanceTool();
+
+    var handler = CreateHandler(
+        jobRepo: jobRepo,
+        sbomRepo: sbomRepo,
+        specConformanceTool: specConformanceTool);
+
+    // Act
+    await handler.HandleAsync(CancellationToken.None);
+
+    // Assert
+    Assert.True(specConformanceTool.WasCalled);
+    Assert.Equal("CycloneDX", specConformanceTool.LastSpecType);
+    Assert.Equal("1.6", specConformanceTool.LastSpecVersion);
+}
+
+[Fact]
+public async Task HandleAsyncConformanceResultIsStoredOnValidationResult()
+{
+    // Arrange
+    var sbomId = Guid.NewGuid();
+
+    var jobRepo = new FakeValidationJobRepository
+    {
+        JobToReturn = new ValidationJob
+        {
+            Id = Guid.NewGuid(),
+            SbomId = sbomId,
+            Status = ValidationJobStatus.Pending
+        }
+    };
+
+    var sbomRepo = new FakeSbomRepository
+    {
+        GetByIdFunc = _ => new Sbom
+        {
+            Id = sbomId,
+            SbomJson = "{}",
+            SpecType = "CycloneDX",
+            SpecVersion = "1.6"
+        }
+    };
+
+    var specConformanceTool = new FakeSpecConformanceTool
+    {
+        ResultToReturn = new SpecConformanceResult
+        {
+            IsConformant = true,
+            Violations = [],
+            DeprecationWarnings = ["components[].licenses is deprecated"],
+            SchemaUrl = "https://example.com/schema.json",
+            FetchedAt = DateTime.UtcNow
+        }
+    };
+
+    var handler = CreateHandler(
+        jobRepo: jobRepo,
+        sbomRepo: sbomRepo,
+        specConformanceTool: specConformanceTool);
+
+    // Act
+    await handler.HandleAsync(CancellationToken.None);
+
+    // Assert
+    Assert.True(jobRepo.CompleteCalled);
+    Assert.NotNull(jobRepo.SavedResult);
+    Assert.True(jobRepo.SavedResult!.IsSpecConformant);
+    Assert.Single(jobRepo.SavedResult.DeprecationWarnings);
+    Assert.Equal(
+        "components[].licenses is deprecated",
+        jobRepo.SavedResult.DeprecationWarnings[0]);
+}
+
+[Fact]
+public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
+{
+    // Arrange
+    var sbomId = Guid.NewGuid();
+
+    var jobRepo = new FakeValidationJobRepository
+    {
+        JobToReturn = new ValidationJob
+        {
+            Id = Guid.NewGuid(),
+            SbomId = sbomId,
+            Status = ValidationJobStatus.Pending
+        }
+    };
+
+    var sbomRepo = new FakeSbomRepository
+    {
+        GetByIdFunc = _ => new Sbom
+        {
+            Id = sbomId,
+            SbomJson = "{}",
+            SpecType = "CycloneDX",
+            SpecVersion = "1.6"
+        }
+    };
+
+    var handler = CreateHandler(
+        jobRepo: jobRepo,
+        sbomRepo: sbomRepo,
+        specConformanceTool: new ThrowingSpecConformanceTool());
+
+    // Act
+    var result = await handler.HandleAsync(CancellationToken.None);
+
+    // Assert
+    Assert.False(result);
+    Assert.True(jobRepo.FailCalled);
+    Assert.Contains("Simulated spec conformance failure", jobRepo.FailReason);
+}
+    
+    [Fact]
     public async Task HandleAsyncJobExistsButSbomMissingReturnsFalse()
     {
         // Arrange
@@ -208,24 +349,6 @@ public class ProcessNextValidationJobHandlerTests
         Assert.True(result); // processed successfully even when validation status is Fail
         Assert.True(jobRepo.CompleteCalled);
     }
-
-    private static ProcessNextValidationJobHandler CreateHandler(
-        IValidationJobRepository? jobRepo = null,
-        ISbomRepository? sbomRepo = null,
-        IValidationTool? validationTool = null,
-        IUnitOfWork? unitOfWork = null)
-    {
-        jobRepo ??= new FakeValidationJobRepository();
-        sbomRepo ??= new FakeSbomRepository();
-        validationTool ??= new FakeValidationTool();
-        unitOfWork ??= new FakeUnitOfWork();
-
-        return new ProcessNextValidationJobHandler(
-            jobRepo,
-            validationTool,
-            sbomRepo,
-            unitOfWork);
-    }
     
     [Fact]
     public async Task HandleAsyncValidationFailsJobIsCompletedNotFailed()
@@ -265,4 +388,26 @@ public class ProcessNextValidationJobHandlerTests
         Assert.Equal(ValidationJobStatus.Completed, jobRepo.CompletedJobStatus);  // ← the real assertion
         Assert.False(jobRepo.FailCalled);
     }
+    
+    private static ProcessNextValidationJobHandler CreateHandler(
+        IValidationJobRepository? jobRepo = null,
+        ISbomRepository? sbomRepo = null,
+        IValidationTool? validationTool = null,
+        ISpecConformanceTool? specConformanceTool = null,
+        IUnitOfWork? unitOfWork = null)
+    {
+        jobRepo ??= new FakeValidationJobRepository();
+        sbomRepo ??= new FakeSbomRepository();
+        validationTool ??= new FakeValidationTool();
+        specConformanceTool ??= new FakeSpecConformanceTool();
+        unitOfWork ??= new FakeUnitOfWork();
+
+        return new ProcessNextValidationJobHandler(
+            jobRepo,
+            validationTool,
+            specConformanceTool,
+            sbomRepo,
+            unitOfWork);
+    }
+
 }

@@ -6,8 +6,9 @@ namespace SbomQualityGate.Application.UseCases;
 public class ProcessNextValidationJobHandler(
     IValidationJobRepository jobRepository,
     IValidationTool validationTool,
-    ISbomRepository sbomRepository, 
-    IUnitOfWork unitOfWork) 
+    ISpecConformanceTool specConformanceTool,
+    ISbomRepository sbomRepository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<bool> HandleAsync(CancellationToken cancellationToken)
     {
@@ -19,7 +20,7 @@ public class ProcessNextValidationJobHandler(
             {
                 return false;
             }
-            
+
             try
             {
                 var sbom = await sbomRepository.GetByIdAsync(job.SbomId, cancellationToken);
@@ -39,6 +40,12 @@ public class ProcessNextValidationJobHandler(
                     job.Profile,
                     cancellationToken);
 
+                var conformanceResult = await specConformanceTool.CheckAsync(
+                    sbom.SbomJson,
+                    sbom.SpecType,
+                    sbom.SpecVersion,
+                    cancellationToken);
+
                 var result = new ValidationResult
                 {
                     Id = Guid.NewGuid(),
@@ -47,6 +54,8 @@ public class ProcessNextValidationJobHandler(
                     Score = resultData.Score,
                     ReportJson = resultData.ReportJson,
                     Profile = job.Profile,
+                    IsSpecConformant = conformanceResult.IsConformant,
+                    DeprecationWarnings = [..conformanceResult.DeprecationWarnings],
                     CreatedAt = DateTime.UtcNow
                 };
 

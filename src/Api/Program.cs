@@ -115,7 +115,7 @@ builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
+builder.Services.AddSingleton<SchemaCache>();
 
 //
 // ------------------------------
@@ -126,6 +126,14 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
 builder.Services.AddSingleton<IReportDiscoveryTool, SbomQsReportDiscoveryTool>();
 builder.Services.AddScoped<DiscoverSbomReportHandler>();
+builder.Services.AddHttpClient("SpecSchema", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("SbomQualityGate/1.0");
+});
+
+builder.Services.AddScoped<ISpecConformanceTool, SpecConformanceTool>();
+
 
 // ------------------------------
 // Seed Data

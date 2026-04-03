@@ -13,6 +13,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ValidationResult> ValidationResults => Set<ValidationResult>();
     public DbSet<SbomFeature> SbomFeatures => Set<SbomFeature>();
     public DbSet<SbomProfile> SbomProfiles => Set<SbomProfile>();
+    public DbSet<ConformancePolicy> ConformancePolicies => Set<ConformancePolicy>();
+    public DbSet<PolicyTier> PolicyTiers => Set<PolicyTier>();
+    public DbSet<PolicyRule> PolicyRules => Set<PolicyRule>();
+    public DbSet<PolicyEvaluationResult> PolicyEvaluationResults => Set<PolicyEvaluationResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +79,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(x => x.ReportJson)
                 .HasColumnType("jsonb");
+            
+            entity.Property(x => x.DeprecationWarnings).HasColumnType("text[]");
 
             entity.HasOne(x => x.ValidationJob)
                 .WithMany()
@@ -104,6 +110,77 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(x => x.Name).IsRequired();
             entity.Property(x => x.Description).IsRequired();
+        });
+        
+        modelBuilder.Entity<ConformancePolicy>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).IsRequired();
+            entity.Property(x => x.SpecType).IsRequired();
+            entity.Property(x => x.MinSpecVersion).IsRequired();
+
+            // At most one scope FK set — enforced in application layer
+            entity.HasOne(x => x.Team)
+                .WithMany()
+                .HasForeignKey(x => x.TeamId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PolicyTier>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).IsRequired();
+
+            entity.HasOne(x => x.Policy)
+                .WithMany(x => x.Tiers)
+                .HasForeignKey(x => x.PolicyId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PolicyRule>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.JsonPath).IsRequired();
+
+            entity.HasOne(x => x.Policy)
+                .WithMany(x => x.Rules)
+                .HasForeignKey(x => x.PolicyId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Tier)
+                .WithMany(x => x.Rules)
+                .HasForeignKey(x => x.TierId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PolicyEvaluationResult>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ViolationsJson)
+                .HasColumnType("jsonb");
+
+            entity.HasOne(x => x.ValidationResult)
+                .WithMany()
+                .HasForeignKey(x => x.ValidationResultId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.ValidationResultId)
+                .IsUnique();
         });
     }
 }

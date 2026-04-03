@@ -22,6 +22,144 @@ namespace SbomQualityGate.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.ConformancePolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MinSpecVersion")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SpecType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("ConformancePolicies");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyEvaluationResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PolicyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PolicyName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ValidationResultId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ViolationsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ValidationResultId")
+                        .IsUnique();
+
+                    b.ToTable("PolicyEvaluationResults");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("JsonPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TierId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PolicyId");
+
+                    b.HasIndex("TierId");
+
+                    b.ToTable("PolicyRules");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyTier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EnforcementDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PolicyId");
+
+                    b.ToTable("PolicyTiers");
+                });
+
             modelBuilder.Entity("SbomQualityGate.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -226,6 +364,13 @@ namespace SbomQualityGate.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.PrimitiveCollection<string[]>("DeprecationWarnings")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<bool>("IsSpecConformant")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Profile")
                         .IsRequired()
                         .HasColumnType("text");
@@ -249,6 +394,64 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ValidationResults");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.ConformancePolicy", b =>
+                {
+                    b.HasOne("SbomQualityGate.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SbomQualityGate.Domain.Entities.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyEvaluationResult", b =>
+                {
+                    b.HasOne("SbomQualityGate.Domain.Entities.ValidationResult", "ValidationResult")
+                        .WithMany()
+                        .HasForeignKey("ValidationResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ValidationResult");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyRule", b =>
+                {
+                    b.HasOne("SbomQualityGate.Domain.Entities.ConformancePolicy", "Policy")
+                        .WithMany("Rules")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SbomQualityGate.Domain.Entities.PolicyTier", "Tier")
+                        .WithMany("Rules")
+                        .HasForeignKey("TierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+
+                    b.Navigation("Tier");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyTier", b =>
+                {
+                    b.HasOne("SbomQualityGate.Domain.Entities.ConformancePolicy", "Policy")
+                        .WithMany("Tiers")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
                 });
 
             modelBuilder.Entity("SbomQualityGate.Domain.Entities.Product", b =>
@@ -293,6 +496,18 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ValidationJob");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.ConformancePolicy", b =>
+                {
+                    b.Navigation("Rules");
+
+                    b.Navigation("Tiers");
+                });
+
+            modelBuilder.Entity("SbomQualityGate.Domain.Entities.PolicyTier", b =>
+                {
+                    b.Navigation("Rules");
                 });
 
             modelBuilder.Entity("SbomQualityGate.Domain.Entities.Product", b =>
