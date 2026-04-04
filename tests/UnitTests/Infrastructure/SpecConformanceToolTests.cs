@@ -1,7 +1,5 @@
-using System.Net;
 using NJsonSchema;
 using SbomQualityGate.Infrastructure.Validation;
-using SbomQualityGate.UnitTests.Helpers;
 
 namespace SbomQualityGate.UnitTests.Infrastructure;
 
@@ -33,23 +31,28 @@ public class SpecConformanceToolTests
         }
         """;
 
-    private static SpecConformanceTool CreateTool(
-        string schemaResponse,
-        HttpStatusCode statusCode = HttpStatusCode.OK,
-        SchemaCache? cache = null)
+    private static SpecConformanceTool CreateTool(string schemaJson = MinimalCycloneDxSchema)
     {
-        var handler = new FakeHttpMessageHandler(schemaResponse, statusCode);
-        var httpClient = new HttpClient(handler);
-        var factory = new FakeHttpClientFactory(httpClient);
-        cache ??= new SchemaCache();
-        return new SpecConformanceTool(factory, cache);
+        var cache = new SchemaCache();
+        var schema = JsonSchema.FromJsonAsync(schemaJson).GetAwaiter().GetResult();
+
+        cache.Set(
+            "https://raw.githubusercontent.com/CycloneDX/specification/master/schema/bom-1.4.schema.json",
+            schema,
+            DateTime.UtcNow);
+        cache.Set(
+            "https://raw.githubusercontent.com/spdx/spdx-spec/development/v2.3/schemas/spdx-schema.json",
+            schema,
+            DateTime.UtcNow);
+
+        return new SpecConformanceTool(cache);
     }
 
     [Fact]
     public async Task CheckAsyncUnknownSpecTypeReturnsNonConformant()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
 
         // Act
         var result = await tool.CheckAsync("{}", "UnknownFormat", "1.0", CancellationToken.None);
@@ -64,7 +67,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncUnknownVersionReturnsNonConformant()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
 
         // Act
         var result = await tool.CheckAsync("{}", "CycloneDX", "9.9", CancellationToken.None);
@@ -78,7 +81,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncValidSbomReturnsConformant()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
         var sbom = """{"bomFormat": "CycloneDX", "specVersion": "1.4"}""";
 
         // Act
@@ -93,7 +96,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncMissingRequiredFieldReturnsViolation()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
         var sbom = """{"specVersion": "1.4"}"""; // missing required bomFormat
 
         // Act
@@ -108,7 +111,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncDeprecatedFieldInUseReturnsWarning()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
         var sbom = """
             {
                 "bomFormat": "CycloneDX",
@@ -132,7 +135,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncNoDeprecatedFieldsInUseReturnsNoWarnings()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
         var sbom = """
             {
                 "bomFormat": "CycloneDX",
@@ -150,24 +153,19 @@ public class SpecConformanceToolTests
         Assert.True(result.IsConformant);
         Assert.Empty(result.DeprecationWarnings);
     }
-
+    
     [Fact]
     public async Task CheckAsyncSchemaIsServedFromCacheOnSecondCall()
     {
         // Arrange
-        var cache = new SchemaCache();
-        var handler = new FakeHttpMessageHandler(MinimalCycloneDxSchema);
-        var httpClient = new HttpClient(handler);
-        var factory = new FakeHttpClientFactory(httpClient);
-        var tool = new SpecConformanceTool(factory, cache);
-
+        var tool = CreateTool();
         var sbom = """{"bomFormat": "CycloneDX", "specVersion": "1.4"}""";
 
         // Act — call twice
         var first = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
         var second = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
-        // Assert — both succeed, and FetchedAt is identical (came from cache)
+        // Assert — FetchedAt is identical because both calls hit the cache
         Assert.True(first.IsConformant);
         Assert.True(second.IsConformant);
         Assert.Equal(first.FetchedAt, second.FetchedAt);
@@ -176,8 +174,8 @@ public class SpecConformanceToolTests
     [Fact]
     public async Task CheckAsyncSpdxVersionNormalisedCorrectly()
     {
-        // Arrange — SPDX specVersion is stored as "SPDX-2.3", tool must normalise it
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        // Arrange — SPDX specVersion is stored as "SPDX-2.3", tool must normalize it
+        var tool = CreateTool();
 
         // Act — "SPDX-2.3" should resolve to a known version, not return "No schema available"
         // We use a schema that will pass validation for any JSON object
@@ -191,7 +189,7 @@ public class SpecConformanceToolTests
     public async Task CheckAsyncSchemaUrlIsPopulatedInResult()
     {
         // Arrange
-        var tool = CreateTool(MinimalCycloneDxSchema);
+        var tool = CreateTool();
         var sbom = """{"bomFormat": "CycloneDX", "specVersion": "1.4"}""";
 
         // Act
