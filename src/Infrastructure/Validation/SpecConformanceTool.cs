@@ -5,9 +5,7 @@ using SbomQualityGate.Application.Models;
 
 namespace SbomQualityGate.Infrastructure.Validation;
 
-public class SpecConformanceTool(
-    IHttpClientFactory httpClientFactory,
-    SchemaCache schemaCache) : ISpecConformanceTool
+public class SpecConformanceTool(SchemaCache schemaCache) : ISpecConformanceTool
 {
     // Supported CycloneDX versions — extend as new versions are published
     private static readonly HashSet<string> KnownCycloneDxVersions =
@@ -82,9 +80,9 @@ public class SpecConformanceTool(
         if (schemaCache.TryGet(schemaUrl, out var cached, out var cachedAt))
             return (cached!, cachedAt);
 
-        var client = httpClientFactory.CreateClient("SpecSchema");
-        var schemaJson = await client.GetStringAsync(schemaUrl, cancellationToken);
-        var schema = await JsonSchema.FromJsonAsync(schemaJson, cancellationToken);
+        // Use FromUrlAsync so NJsonSchema can resolve relative $ref paths
+        // (e.g. jsf-0.82.schema.json referenced by CycloneDX schemas)
+        var schema = await JsonSchema.FromUrlAsync(schemaUrl, cancellationToken);
         var fetchedAt = DateTime.UtcNow;
 
         schemaCache.Set(schemaUrl, schema, fetchedAt);

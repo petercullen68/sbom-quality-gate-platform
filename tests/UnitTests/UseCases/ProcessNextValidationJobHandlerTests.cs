@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.Models;
 using SbomQualityGate.Application.UseCases;
@@ -394,6 +395,7 @@ public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
         ISbomRepository? sbomRepo = null,
         IValidationTool? validationTool = null,
         ISpecConformanceTool? specConformanceTool = null,
+        DiscoverSbomReportHandler? discoverSbomReportHandler = null,
         IUnitOfWork? unitOfWork = null)
     {
         jobRepo ??= new FakeValidationJobRepository();
@@ -401,13 +403,20 @@ public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
         validationTool ??= new FakeValidationTool();
         specConformanceTool ??= new FakeSpecConformanceTool();
         unitOfWork ??= new FakeUnitOfWork();
+        discoverSbomReportHandler ??= new DiscoverSbomReportHandler(
+            new FakeReportDiscoveryTool(),
+            new FakeSbomFeatureRepository(),
+            new FakeSbomProfileRepository(),
+            unitOfWork);
 
         return new ProcessNextValidationJobHandler(
             jobRepo,
             validationTool,
             specConformanceTool,
             sbomRepo,
-            unitOfWork);
+            discoverSbomReportHandler,
+            unitOfWork,
+            NullLogger<ProcessNextValidationJobHandler>.Instance);
     }
 
 }

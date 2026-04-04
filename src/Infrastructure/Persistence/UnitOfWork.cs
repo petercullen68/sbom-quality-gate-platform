@@ -5,37 +5,37 @@ namespace SbomQualityGate.Infrastructure.Persistence;
 
 public class UnitOfWork(AppDbContext context) : IUnitOfWork
 {
-    public async Task ExecuteAsync(
+    public Task ExecuteAsync(
         Func<Task> action,
         CancellationToken cancellationToken,
         bool notifyValidationJobs = false)
     {
-        var strategy = context.Database.CreateExecutionStrategy();
+        ArgumentNullException.ThrowIfNull(action);
 
-        await strategy.ExecuteAsync(async () =>
-        {
-            await using var transaction =
-                await context.Database.BeginTransactionAsync(cancellationToken);
-
-            await action();
-
-            await context.SaveChangesAsync(cancellationToken);
-
-            await transaction.CommitAsync(cancellationToken);
-
-            if (notifyValidationJobs)
+        return ExecuteCoreAsync(
+            async () =>
             {
-                await context.Database.ExecuteSqlRawAsync(
-                    "NOTIFY validation_jobs",
-                    cancellationToken);
-            }
-        });
+                await action();
+                return true;
+            },
+            notifyValidationJobs, cancellationToken);
     }
-    
-    public async Task<T> ExecuteAsync<T>(
+
+    public Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
         CancellationToken cancellationToken,
         bool notifyValidationJobs = false)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        return ExecuteCoreAsync(action, notifyValidationJobs, cancellationToken);
+    }
+
+    private async Task<T> ExecuteCoreAsync<T>(
+        Func<Task<T>> action,
+        bool notifyValidationJobs,
+        CancellationToken cancellationToken
+        )
     {
         var strategy = context.Database.CreateExecutionStrategy();
 
@@ -48,15 +48,15 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
             await context.SaveChangesAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
-            
             if (notifyValidationJobs)
             {
                 await context.Database.ExecuteSqlRawAsync(
                     "NOTIFY validation_jobs",
                     cancellationToken);
             }
-            
+
+            await transaction.CommitAsync(cancellationToken);
+
             return result;
         });
     }
