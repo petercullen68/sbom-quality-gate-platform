@@ -200,6 +200,9 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<string>("SbomXml")
+                        .HasColumnType("text");
+
                     b.Property<string>("SpecType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -368,9 +371,6 @@ namespace SbomQualityGate.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
-                    b.Property<bool>("IsSpecConformant")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Profile")
                         .IsRequired()
                         .HasColumnType("text");
@@ -381,6 +381,9 @@ namespace SbomQualityGate.Infrastructure.Migrations
 
                     b.Property<double>("Score")
                         .HasColumnType("double precision");
+
+                    b.Property<int>("SpecConformanceStatus")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

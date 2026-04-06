@@ -11,6 +11,8 @@ public class SubmitSbomHandler(
     IValidationJobRepository jobRepository,
     IProductRepository productRepository,
     ISbomProfileRepository profileRepository,
+    ISbomFormatDetector formatDetector,
+    ISbomXmlConverter xmlConverter,
     IUnitOfWork unitOfWork) : ISubmitSbomHandler
 {
     public async Task<Guid> HandleAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
@@ -33,13 +35,45 @@ public class SubmitSbomHandler(
                 $"Product '{command.ProductId}' does not exist.");
         }
 
+        // Detect format and normalize to JSON
+        var format = formatDetector.Detect(command.SbomContent);
+        string? originalXml = null;
+        string sbomJson;
+
+        switch (format)
+        {
+            case SbomFormat.Json:
+                sbomJson = command.SbomContent;
+                break;
+
+            case SbomFormat.CycloneDxXml:
+                originalXml = command.SbomContent;
+                sbomJson = xmlConverter.ConvertToJson(command.SbomContent);
+                break;
+
+            case SbomFormat.SpdxXml:
+                throw new RequestValidationException(
+                    "SPDX XML is not currently supported. " +
+                    "Please submit your SPDX SBOM in JSON format.");
+
+            case SbomFormat.TagValue:
+                throw new RequestValidationException(
+                    "SPDX Tag-Value format is not currently supported. " +
+                    "Please submit your SPDX SBOM in JSON format.");
+
+            default:
+                throw new RequestValidationException(
+                    "Unrecognised SBOM format. Supported formats are " +
+                    "CycloneDX JSON, CycloneDX XML, and SPDX JSON.");
+        }
+
         var specType = string.Empty;
         var specVersion = string.Empty;
         var componentCount = 0;
 
         try
         {
-            using var doc = JsonDocument.Parse(command.SbomJson);
+            using var doc = JsonDocument.Parse(sbomJson);
             var root = doc.RootElement;
 
             // Detect CycloneDX
@@ -48,15 +82,11 @@ public class SubmitSbomHandler(
                 specType = bomFormatProp.GetString();
 
                 if (root.TryGetProperty("specVersion", out var specVersionProp))
-                {
                     specVersion = specVersionProp.GetString() ?? string.Empty;
-                }
 
                 if (root.TryGetProperty("components", out var componentsProp) &&
                     componentsProp.ValueKind == JsonValueKind.Array)
-                {
                     componentCount = componentsProp.GetArrayLength();
-                }
             }
             // Detect SPDX
             else if (root.TryGetProperty("spdxVersion", out var spdxVersionProp))
@@ -66,24 +96,22 @@ public class SubmitSbomHandler(
 
                 if (root.TryGetProperty("packages", out var packagesProp) &&
                     packagesProp.ValueKind == JsonValueKind.Array)
-                {
                     componentCount = packagesProp.GetArrayLength();
-                }
             }
         }
         catch (JsonException)
         {
-            throw new RequestValidationException("command.SbomJson contains invalid JSON.");
+            throw new RequestValidationException("SBOM contains invalid JSON.");
         }
         catch (InvalidOperationException)
         {
-            throw new RequestValidationException("command.SbomJson has an invalid structure.");
+            throw new RequestValidationException("SBOM has an invalid structure.");
         }
 
         if (string.IsNullOrEmpty(specType) || (specType != "CycloneDX" && specType != "SPDX"))
         {
             throw new RequestValidationException(
-                "command.SbomJson must be a valid CycloneDX or SPDX document.");
+                "SBOM must be a valid CycloneDX or SPDX document.");
         }
 
         var sbom = new Sbom
@@ -91,7 +119,8 @@ public class SubmitSbomHandler(
             Id = Guid.NewGuid(),
             ProductId = command.ProductId,
             Version = command.Version,
-            SbomJson = command.SbomJson,
+            SbomJson = sbomJson,
+            SbomXml = originalXml,
             UploadedAt = DateTime.UtcNow,
             SpecType = specType,
             SpecVersion = specVersion,

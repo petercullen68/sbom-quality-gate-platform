@@ -1,4 +1,5 @@
 using NJsonSchema;
+using SbomQualityGate.Domain.Enums;
 using SbomQualityGate.Infrastructure.Validation;
 
 namespace SbomQualityGate.UnitTests.Infrastructure;
@@ -47,34 +48,25 @@ public class SpecConformanceToolTests
 
         return new SpecConformanceTool(cache);
     }
-
     [Fact]
     public async Task CheckAsyncUnknownSpecTypeReturnsNonConformant()
     {
-        // Arrange
         var tool = CreateTool();
-
-        // Act
         var result = await tool.CheckAsync("{}", "UnknownFormat", "1.0", CancellationToken.None);
 
-        // Assert
-        Assert.False(result.IsConformant);
+        Assert.Equal(SpecConformanceStatus.NonConformant, result.Status);
         Assert.Single(result.Violations);
-        Assert.Contains("No schema available", result.Violations[0]);
+        Assert.Contains("unknown spec type", result.Violations[0]);
     }
 
     [Fact]
-    public async Task CheckAsyncUnknownVersionReturnsNonConformant()
+    public async Task CheckAsyncUnknownVersionReturnsSkipped()
     {
-        // Arrange
         var tool = CreateTool();
-
-        // Act
         var result = await tool.CheckAsync("{}", "CycloneDX", "9.9", CancellationToken.None);
 
-        // Assert
-        Assert.False(result.IsConformant);
-        Assert.Contains("No schema available", result.Violations[0]);
+        Assert.Equal(SpecConformanceStatus.Skipped, result.Status);
+        Assert.Empty(result.Violations);
     }
 
     [Fact]
@@ -88,7 +80,7 @@ public class SpecConformanceToolTests
         var result = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsConformant);
+        Assert.True(result.Status == SpecConformanceStatus.Conformant);
         Assert.Empty(result.Violations);
     }
 
@@ -103,7 +95,7 @@ public class SpecConformanceToolTests
         var result = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
         // Assert
-        Assert.False(result.IsConformant);
+        Assert.False(result.Status == SpecConformanceStatus.Conformant);
         Assert.NotEmpty(result.Violations);
     }
 
@@ -126,7 +118,7 @@ public class SpecConformanceToolTests
         var result = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsConformant);
+        Assert.True(result.Status == SpecConformanceStatus.Conformant);
         Assert.NotEmpty(result.DeprecationWarnings);
         Assert.Contains(result.DeprecationWarnings, w => w.Contains("modified"));
     }
@@ -150,7 +142,7 @@ public class SpecConformanceToolTests
         var result = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsConformant);
+        Assert.True(result.Status == SpecConformanceStatus.Conformant);
         Assert.Empty(result.DeprecationWarnings);
     }
     
@@ -166,8 +158,8 @@ public class SpecConformanceToolTests
         var second = await tool.CheckAsync(sbom, "CycloneDX", "1.4", CancellationToken.None);
 
         // Assert — FetchedAt is identical because both calls hit the cache
-        Assert.True(first.IsConformant);
-        Assert.True(second.IsConformant);
+        Assert.True(first.Status == SpecConformanceStatus.Conformant);
+        Assert.True(second.Status == SpecConformanceStatus.Conformant);
         Assert.Equal(first.FetchedAt, second.FetchedAt);
     }
 

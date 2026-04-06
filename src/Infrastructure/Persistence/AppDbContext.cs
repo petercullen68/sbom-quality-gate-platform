@@ -64,6 +64,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(x => x.SbomJson)
                 .HasColumnType("jsonb");
+            
+            entity.Property(x => x.SbomXml)
+                .HasColumnType("text")
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<ValidationJob>(entity =>

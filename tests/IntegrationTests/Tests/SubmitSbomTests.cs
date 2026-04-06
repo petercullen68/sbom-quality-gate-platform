@@ -70,7 +70,7 @@ public class SubmitSbomTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = CycloneDxSbom
+            SbomContent = CycloneDxSbom
         };
 
         var response = await Client.PostAsJsonAsync("/api/sboms", command);
@@ -85,7 +85,7 @@ public class SubmitSbomTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = SpdxSbom
+            SbomContent = SpdxSbom
         };
 
         var response = await Client.PostAsJsonAsync("/api/sboms", command);
@@ -100,7 +100,7 @@ public class SubmitSbomTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = CycloneDxSbom
+            SbomContent = CycloneDxSbom
         };
 
         var response = await Client.PostAsJsonAsync("/api/sboms", command);
@@ -128,7 +128,7 @@ public class SubmitSbomTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = "not-valid-json"
+            SbomContent = "not-valid-json"
         };
 
         var response = await Client.PostAsJsonAsync("/api/sboms", command);
@@ -143,7 +143,7 @@ public class SubmitSbomTests(SbomQualityGateApiFactory factory)
         {
             ProductId = Guid.NewGuid(),
             Version = "1.0.0",
-            SbomJson = CycloneDxSbom
+            SbomContent = CycloneDxSbom
         };
 
         var response = await Client.PostAsJsonAsync("/api/sboms", command);

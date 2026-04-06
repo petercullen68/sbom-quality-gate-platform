@@ -84,7 +84,7 @@ public async Task HandleAsyncConformanceResultIsStoredOnValidationResult()
     {
         ResultToReturn = new SpecConformanceResult
         {
-            IsConformant = true,
+            Status = SpecConformanceStatus.Conformant,
             Violations = [],
             DeprecationWarnings = ["components[].licenses is deprecated"],
             SchemaUrl = "https://example.com/schema.json",
@@ -103,7 +103,7 @@ public async Task HandleAsyncConformanceResultIsStoredOnValidationResult()
     // Assert
     Assert.True(jobRepo.CompleteCalled);
     Assert.NotNull(jobRepo.SavedResult);
-    Assert.True(jobRepo.SavedResult!.IsSpecConformant);
+    Assert.Equal(SpecConformanceStatus.Conformant, jobRepo.SavedResult!.SpecConformanceStatus);
     Assert.Single(jobRepo.SavedResult.DeprecationWarnings);
     Assert.Equal(
         "components[].licenses is deprecated",

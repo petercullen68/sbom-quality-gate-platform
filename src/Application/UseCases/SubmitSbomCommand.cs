@@ -11,5 +11,5 @@ public class SubmitSbomCommand
     public string Version { get; init; } = string.Empty;
 
     [Required]
-    public string SbomJson { get; init; } = string.Empty;
+    public string SbomContent { get; init; } = string.Empty;
 }

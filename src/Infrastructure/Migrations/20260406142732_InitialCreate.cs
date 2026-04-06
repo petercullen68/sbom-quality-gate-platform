@@ -123,7 +123,7 @@ namespace SbomQualityGate.Infrastructure.Migrations
                     Profile = table.Column<string>(type: "text", nullable: false),
                     ReportJson = table.Column<string>(type: "jsonb", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsSpecConformant = table.Column<bool>(type: "boolean", nullable: false),
+                    SpecConformanceStatus = table.Column<int>(type: "integer", nullable: false),
                     DeprecationWarnings = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
@@ -180,7 +180,8 @@ namespace SbomQualityGate.Infrastructure.Migrations
                     SpecVersion = table.Column<string>(type: "text", nullable: false),
                     SbomJson = table.Column<string>(type: "jsonb", nullable: false),
                     ComponentCount = table.Column<int>(type: "integer", nullable: false),
-                    UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SbomXml = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

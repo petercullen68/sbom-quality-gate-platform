@@ -19,4 +19,7 @@ public class Sbom
     public DateTime UploadedAt { get; init; }
 
     public Product Product { get; init; } = null!;
+    
+    // Original XML content — only populated for XML submissions
+    public string? SbomXml { get; init; }
 }

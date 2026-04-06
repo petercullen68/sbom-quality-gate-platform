@@ -7,6 +7,7 @@
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CycloneDX.Core" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="SecurityCodeScan.VS2019">
       <PrivateAssets>all</PrivateAssets>
