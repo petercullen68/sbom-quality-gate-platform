@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SbomQualityGate.Api.Configuration;
@@ -73,18 +72,12 @@ public class SbomsController(
                 detail: $"Maximum allowed size is {maxUploadBytes} bytes.",
                 statusCode: StatusCodes.Status413PayloadTooLarge);
         }
-
-        if (!IsValidJson(sbomJson))
-        {
-            ModelState.AddModelError(nameof(request.File), "Uploaded file is not valid JSON.");
-            return ValidationProblem(ModelState);
-        }
-
+        
         var command = new SubmitSbomCommand
         {
             ProductId = request.ProductId,
             Version = request.Version.Trim(),
-            SbomJson = sbomJson
+            SbomContent = sbomJson
         };
 
         return await SubmitInternalAsync(command, cancellationToken);
@@ -114,7 +107,9 @@ public class SbomsController(
         return Ok(response);
     }
 
-    private async Task<IActionResult> SubmitInternalAsync(SubmitSbomCommand command, CancellationToken cancellationToken)
+    private async Task<IActionResult> SubmitInternalAsync(
+        SubmitSbomCommand command, 
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -123,24 +118,11 @@ public class SbomsController(
         }
         catch (RequestValidationException ex)
         {
-            ModelState.AddModelError(nameof(command.SbomJson), ex.Message);
+            ModelState.AddModelError(nameof(command.SbomContent), ex.Message);
             return ValidationProblem(ModelState);
         }
     }
-
-    private static bool IsValidJson(string content)
-    {
-        try
-        {
-            using var _ = JsonDocument.Parse(content);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
+    
     private static async Task<string> ReadUtf8WithLimitAsync(
         IFormFile file,
         long maxBytes,

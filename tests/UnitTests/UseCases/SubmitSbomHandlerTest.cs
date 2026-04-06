@@ -10,15 +10,7 @@ namespace SbomQualityGate.UnitTests.UseCases;
 public class SubmitSbomHandlerTest
 {
     private static readonly Guid ValidProductId = Guid.NewGuid();
-
-    private static Product ValidProduct => new()
-    {
-        Id = ValidProductId,
-        TeamId = Guid.NewGuid(),
-        Name = "Test Product",
-        CreatedAt = DateTime.UtcNow
-    };
-
+    
     [Fact]
     public async Task HandleAsyncValidSbomPersistsSbomAndCreatesJob()
     {
@@ -33,12 +25,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act
@@ -70,12 +62,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = Guid.NewGuid(),
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act
@@ -101,12 +93,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = Guid.NewGuid(),
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act
@@ -129,12 +121,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act
@@ -159,12 +151,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act
@@ -186,7 +178,7 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = "this-is-not-json"
+            SbomContent = "this-is-not-json"
         };
 
         // Act
@@ -211,12 +203,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.5"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.5"
+                          }
+                          """
         };
 
         // Act + Assert
@@ -239,12 +231,12 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "bomFormat": "CycloneDX",
-                           "specVersion": "1.4"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "bomFormat": "CycloneDX",
+                              "specVersion": "1.4"
+                          }
+                          """
         };
 
         // Act
@@ -267,11 +259,11 @@ public class SubmitSbomHandlerTest
         {
             ProductId = ValidProductId,
             Version = "1.0.0",
-            SbomJson = """
-                       {
-                           "someOtherField": "value"
-                       }
-                       """
+            SbomContent = """
+                          {
+                              "someOtherField": "value"
+                          }
+                          """
         };
 
         // Act
@@ -289,12 +281,22 @@ public class SubmitSbomHandlerTest
         IValidationJobRepository? jobRepo = null,
         IProductRepository? productRepo = null,
         ISbomProfileRepository? profileRepo = null,
+        ISbomFormatDetector? formatDetector = null,
+        ISbomXmlConverter? xmlConverter = null,
         IUnitOfWork? unitOfWork = null)
     {
         sbomRepo ??= new FakeSbomRepository();
         jobRepo ??= new FakeValidationJobRepository();
-        productRepo ??= new FakeProductRepository(productToReturn: ValidProduct);
-        profileRepo ??= new FakeSbomProfileRepository(anySystemProfilesExist: true);
+        productRepo ??= new FakeProductRepository(new Product
+        {
+            Id = Guid.NewGuid(),
+            TeamId = Guid.NewGuid(),
+            Name = "Default Product",
+            CreatedAt = DateTime.UtcNow
+        });
+        profileRepo ??= new FakeSbomProfileRepository();
+        formatDetector ??= new FakeSbomFormatDetector();
+        xmlConverter ??= new FakeSbomXmlConverter();
         unitOfWork ??= new FakeUnitOfWork();
 
         return new SubmitSbomHandler(
@@ -302,6 +304,8 @@ public class SubmitSbomHandlerTest
             jobRepo,
             productRepo,
             profileRepo,
+            formatDetector,
+            xmlConverter,
             unitOfWork);
     }
 }

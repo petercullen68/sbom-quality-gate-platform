@@ -1,5 +1,6 @@
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.Models;
+using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.UnitTests.Fakes;
 
@@ -11,7 +12,7 @@ public class FakeSpecConformanceTool : ISpecConformanceTool
 
     public SpecConformanceResult ResultToReturn { get; init; } = new()
     {
-        IsConformant = true,
+        Status = SpecConformanceStatus.Conformant,
         Violations = [],
         DeprecationWarnings = [],
         SchemaUrl = "https://example.com/schema.json",

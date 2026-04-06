@@ -60,7 +60,7 @@ public class ProcessValidationJobTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = CycloneDxSbom
+            SbomContent = CycloneDxSbom
         };
 
         await Client.PostAsJsonAsync("/api/sboms", command);
@@ -107,7 +107,7 @@ public class ProcessValidationJobTests(SbomQualityGateApiFactory factory)
         {
             ProductId = _productId,
             Version = "1.0.0",
-            SbomJson = CycloneDxSbom
+            SbomContent = CycloneDxSbom
         };
 
         await Client.PostAsJsonAsync("/api/sboms", command);

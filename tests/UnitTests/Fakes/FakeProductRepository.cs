@@ -3,17 +3,10 @@ using SbomQualityGate.Domain.Entities;
 
 namespace SbomQualityGate.UnitTests.Fakes;
 
-public class FakeProductRepository : IProductRepository
+public class FakeProductRepository(Product? productToReturn = null) : IProductRepository
 {
-    private readonly Product? _productToReturn;
-
     public bool AddCalled { get; private set; }
     public Product? AddedProduct { get; private set; }
-
-    public FakeProductRepository(Product? productToReturn = null)
-    {
-        _productToReturn = productToReturn;
-    }
 
     public Task AddAsync(Product product, CancellationToken cancellationToken)
     {
@@ -24,6 +17,6 @@ public class FakeProductRepository : IProductRepository
 
     public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return Task.FromResult(_productToReturn);
+        return Task.FromResult(productToReturn);
     }
 }

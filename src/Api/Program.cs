@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Diagnostics;
 using System.Globalization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +8,7 @@ using OpenTelemetry.Trace;
 using SbomQualityGate.Api.Configuration;
 using SbomQualityGate.Api.Logging;
 using SbomQualityGate.Application.Interfaces;
+using SbomQualityGate.Application.Services;
 using SbomQualityGate.Application.UseCases;
 using SbomQualityGate.Infrastructure.Persistence;
 using SbomQualityGate.Infrastructure.Seed;
@@ -119,12 +120,26 @@ builder.Services.AddSingleton<SchemaCache>();
 
 //
 // ------------------------------
+// Application Services
+builder.Services.AddScoped<ISbomFormatDetector, SbomFormatDetector>();
+// ------------------------------
+//
+
+//
+// ------------------------------
+// Infrastructure Validation
+builder.Services.AddScoped<ISbomXmlConverter, CycloneDxXmlConverter>();
+// ------------------------------
+//
+
+//
+// ------------------------------
 // Application (Use Cases)
 // ------------------------------
 //
 
 builder.Services.AddScoped<ISubmitSbomHandler, SubmitSbomHandler>();
-builder.Services.AddSingleton<IReportDiscoveryTool, SbomQsReportDiscoveryTool>();
+builder.Services.AddScoped<IReportDiscoveryTool, SbomQsReportDiscoveryTool>();
 builder.Services.AddScoped<DiscoverSbomReportHandler>();
 builder.Services.AddScoped<ISpecConformanceTool, SpecConformanceTool>();
 

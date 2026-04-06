@@ -56,7 +56,7 @@ public class ProcessNextValidationJobHandler(
         // Phase 2: external work — outside any transaction
         // -------------------------------------------------------
         string reportJson;
-        bool isSpecConformant;
+        SpecConformanceStatus isSpecConformant;
         string[] deprecationWarnings;
         ValidationStatus status;
         double score;
@@ -85,7 +85,7 @@ public class ProcessNextValidationJobHandler(
             reportJson = resultData.ReportJson;
             status = resultData.Status;
             score = resultData.Score;
-            isSpecConformant = conformanceResult.IsConformant;
+            isSpecConformant = conformanceResult.Status;
             deprecationWarnings = [..conformanceResult.DeprecationWarnings];
         }
         catch (Exception ex)
@@ -109,7 +109,7 @@ public class ProcessNextValidationJobHandler(
                     Score = score,
                     ReportJson = reportJson,
                     Profile = job.Profile,
-                    IsSpecConformant = isSpecConformant,
+                    SpecConformanceStatus = isSpecConformant,
                     DeprecationWarnings = deprecationWarnings,
                     CreatedAt = DateTime.UtcNow
                 };

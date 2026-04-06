@@ -20,6 +20,10 @@ var builder = Host.CreateApplicationBuilder(args);
 //
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'Default' is missing or empty.");
+}
 
 //
 // ------------------------------
@@ -71,27 +75,29 @@ builder.AddSbomQualityGateTelemetry();
 //
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+builder.Services.AddScoped<ISbomFeatureRepository, SbomFeatureRepository>();
+builder.Services.AddScoped<ISbomProfileRepository, SbomProfileRepository>();
 builder.Services.AddScoped<ISbomRepository, SbomRepository>();
 builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<IValidationResultRepository, ValidationResultRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddSingleton<SchemaCache>();
 
 // ------------------------------
 // Infrastructure (External Tools)
 // ------------------------------
-//
-builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
-builder.Services.AddSingleton<SbomQsCircuitBreaker>();   // ← singleton: shared state across scopes
-builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
 
-//
+builder.Services.AddSingleton<SchemaCache>();
+builder.Services.AddSingleton<SbomQsCircuitBreaker>();
+builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
+builder.Services.AddScoped<IValidationTool, SbomQsValidationTool>();
+builder.Services.AddScoped<ISpecConformanceTool, SpecConformanceTool>();
+builder.Services.AddScoped<IReportDiscoveryTool, SbomQsReportDiscoveryTool>();
+builder.Services.AddScoped<DiscoverSbomReportHandler>();
+
 // ------------------------------
 // Application (Use Cases)
 // ------------------------------
-//
 
 builder.Services.AddScoped<ProcessNextValidationJobHandler>();
 
@@ -102,8 +108,7 @@ builder.Services.AddScoped<ProcessNextValidationJobHandler>();
 //
 
 builder.Services.AddSingleton<JobProcessor>();
-
-builder.Services.AddSingleton<PostgresNotificationListener>(_ => new PostgresNotificationListener(connectionString!));
+builder.Services.AddSingleton<PostgresNotificationListener>(_ => new PostgresNotificationListener(connectionString));
 
 // ------------------------------
 // Seed Data

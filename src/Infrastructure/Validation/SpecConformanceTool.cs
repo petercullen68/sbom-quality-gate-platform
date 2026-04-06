@@ -1,7 +1,7 @@
-using System.Text.Json;
 using NJsonSchema;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.Models;
+using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Infrastructure.Validation;
 
@@ -25,19 +25,48 @@ public class SpecConformanceTool(SchemaCache schemaCache) : ISpecConformanceTool
 
         if (schemaUrl is null)
         {
+            // Unknown spec type — not just a missing schema URL
+            if (!IsKnownSpecType(specType))
+            {
+                return new SpecConformanceResult
+                {
+                    Status = SpecConformanceStatus.NonConformant,
+                    Violations = [$"No schema available for unknown spec type '{specType}'"],
+                    SchemaUrl = string.Empty,
+                    FetchedAt = DateTime.UtcNow
+                };
+            }
+
+            // Known spec type but version not configured — skip gracefully
             return new SpecConformanceResult
             {
-                IsConformant = false,
-                Violations = [$"No schema available for {specType} {specVersion}"],
+                Status = SpecConformanceStatus.Skipped,
+                Violations = [],
                 SchemaUrl = string.Empty,
                 FetchedAt = DateTime.UtcNow
             };
         }
 
-        var (schema, fetchedAt) = await GetSchemaAsync(schemaUrl, cancellationToken);
+        JsonSchema schema;
+        DateTime fetchedAt;
 
-        // Parse the SBOM into a Newtonsoft JToken for NJsonSchema validation
-        // NJsonSchema uses Newtonsoft internally
+        try
+        {
+            (schema, fetchedAt) = await GetSchemaAsync(schemaUrl, cancellationToken);
+        }
+        catch (Exception)
+        {
+            // Network or parse error fetching schema — skip conformance
+            // rather than failing the job
+            return new SpecConformanceResult
+            {
+                Status = SpecConformanceStatus.Skipped,
+                Violations = [],
+                SchemaUrl = schemaUrl,
+                FetchedAt = DateTime.UtcNow
+            };
+        }
+
         Newtonsoft.Json.Linq.JToken sbomToken;
         try
         {
@@ -47,31 +76,34 @@ public class SpecConformanceTool(SchemaCache schemaCache) : ISpecConformanceTool
         {
             return new SpecConformanceResult
             {
-                IsConformant = false,
+                Status = SpecConformanceStatus.NonConformant,
                 Violations = [$"SBOM JSON could not be parsed: {ex.Message}"],
                 SchemaUrl = schemaUrl,
                 FetchedAt = fetchedAt
             };
         }
 
-        // Schema validation
         var validationErrors = schema.Validate(sbomToken);
         var violations = validationErrors
             .Select(e => $"{e.Path}: {e.Kind}")
             .ToList();
 
-        // Deprecated field detection — second pass over schema tree
         var deprecationWarnings = FindDeprecatedFieldsInUse(schema, sbomToken);
 
         return new SpecConformanceResult
         {
-            IsConformant = violations.Count == 0,
+            Status = violations.Count == 0
+                ? SpecConformanceStatus.Conformant
+                : SpecConformanceStatus.NonConformant,
             Violations = violations,
             DeprecationWarnings = deprecationWarnings,
             SchemaUrl = schemaUrl,
             FetchedAt = fetchedAt
         };
     }
+    
+    private static bool IsKnownSpecType(string specType) =>
+        specType is "CycloneDX" or "SPDX";
 
     private async Task<(JsonSchema Schema, DateTime FetchedAt)> GetSchemaAsync(
         string schemaUrl,
