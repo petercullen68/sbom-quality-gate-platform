@@ -117,6 +117,10 @@ builder.Services.AddScoped<IValidationJobRepository, ValidationJobRepository>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddSingleton<SchemaCache>();
+builder.Services
+    .AddOptions<SpecSchemaOptions>()
+    .Bind(builder.Configuration.GetSection(SpecSchemaOptions.SectionName))
+    .ValidateOnStart();
 
 //
 // ------------------------------

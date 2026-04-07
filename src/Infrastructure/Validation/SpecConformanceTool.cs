@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using NJsonSchema;
 using SbomQualityGate.Application.Interfaces;
 using SbomQualityGate.Application.Models;
@@ -5,16 +6,12 @@ using SbomQualityGate.Domain.Enums;
 
 namespace SbomQualityGate.Infrastructure.Validation;
 
-public class SpecConformanceTool(SchemaCache schemaCache) : ISpecConformanceTool
+public class SpecConformanceTool(
+    SchemaCache schemaCache,
+    IOptions<SpecSchemaOptions> schemaOptions) : ISpecConformanceTool
 {
-    // Supported CycloneDX versions — extend as new versions are published
-    private static readonly HashSet<string> KnownCycloneDxVersions =
-        ["1.2", "1.3", "1.4", "1.5", "1.6", "1.7"];
-
-    // Supported SPDX versions
-    private static readonly HashSet<string> KnownSpdxVersions =
-        ["2.2", "2.3"];
-
+    private readonly SpecSchemaOptions _options = schemaOptions.Value;
+    
     public async Task<SpecConformanceResult> CheckAsync(
         string sbomJson,
         string specType,
@@ -122,23 +119,25 @@ public class SpecConformanceTool(SchemaCache schemaCache) : ISpecConformanceTool
         return (schema, fetchedAt);
     }
 
-    private static string? ResolveSchemaUrl(string specType, string specVersion)
+    private string? ResolveSchemaUrl(string specType, string specVersion)
     {
         // SPDX specVersion is stored as "SPDX-2.3" — normalise to "2.3"
-        var normalizedVersion = specType == "SPDX" && specVersion.StartsWith("SPDX-", StringComparison.OrdinalIgnoreCase)
+        var normalizedVersion = specType == "SPDX" &&
+                                specVersion.StartsWith("SPDX-", StringComparison.OrdinalIgnoreCase)
             ? specVersion["SPDX-".Length..]
             : specVersion;
 
-        return specType switch
+        var lookup = specType switch
         {
-            "CycloneDX" when KnownCycloneDxVersions.Contains(normalizedVersion)
-                => $"https://raw.githubusercontent.com/CycloneDX/specification/master/schema/bom-{normalizedVersion}.schema.json",
-
-            "SPDX" when KnownSpdxVersions.Contains(normalizedVersion)
-                => $"https://raw.githubusercontent.com/spdx/spdx-spec/development/v{normalizedVersion}/schemas/spdx-schema.json",
-
+            "CycloneDX" => _options.CycloneDx,
+            "SPDX" => _options.Spdx,
             _ => null
         };
+
+        if (lookup is null)
+            return null;
+
+        return lookup.GetValueOrDefault(normalizedVersion);
     }
 
     private static List<string> FindDeprecatedFieldsInUse(

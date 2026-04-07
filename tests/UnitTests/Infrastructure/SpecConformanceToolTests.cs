@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using NJsonSchema;
 using SbomQualityGate.Domain.Enums;
 using SbomQualityGate.Infrastructure.Validation;
@@ -41,13 +42,22 @@ public class SpecConformanceToolTests
             "https://raw.githubusercontent.com/CycloneDX/specification/master/schema/bom-1.4.schema.json",
             schema,
             DateTime.UtcNow);
-        cache.Set(
-            "https://raw.githubusercontent.com/spdx/spdx-spec/development/v2.3/schemas/spdx-schema.json",
-            schema,
-            DateTime.UtcNow);
 
-        return new SpecConformanceTool(cache);
+        var options = Options.Create(new SpecSchemaOptions
+        {
+            CycloneDx = new Dictionary<string, string>
+            {
+                ["1.4"] = "https://raw.githubusercontent.com/CycloneDX/specification/master/schema/bom-1.4.schema.json"
+            },
+            Spdx = new Dictionary<string, string>
+            {
+                ["2.3"] = "https://raw.githubusercontent.com/spdx/spdx-spec/support/2.3.1/schemas/spdx-schema.json"
+            }
+        });
+
+        return new SpecConformanceTool(cache, options);
     }
+    
     [Fact]
     public async Task CheckAsyncUnknownSpecTypeReturnsNonConformant()
     {
