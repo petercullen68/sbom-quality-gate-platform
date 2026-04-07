@@ -1,0 +1,216 @@
+/**
+ * SBOM Quality Gate - Docusaurus Theme Customization
+ *
+ * CSS variables for light and dark themes.
+ * See: https://docusaurus.io/docs/styling-layout
+ */
+
+/* Light mode colors */
+:root {
+  /* Primary brand color - professional blue */
+  --ifm-color-primary: #2563eb;
+  --ifm-color-primary-dark: #1d4ed8;
+  --ifm-color-primary-darker: #1e40af;
+  --ifm-color-primary-darkest: #1e3a8a;
+  --ifm-color-primary-light: #3b82f6;
+  --ifm-color-primary-lighter: #60a5fa;
+  --ifm-color-primary-lightest: #93c5fd;
+
+  /* Code blocks */
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Typography */
+  --ifm-heading-font-weight: 600;
+  --ifm-font-family-base: system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --ifm-font-family-monospace: "JetBrains Mono", "Fira Code", Consolas, Monaco,
+    "Andale Mono", monospace;
+
+  /* Layout */
+  --ifm-container-width-xl: 1400px;
+
+  /* Sidebar */
+  --doc-sidebar-width: 280px;
+}
+
+/* Dark mode colors */
+[data-theme="dark"] {
+  --ifm-color-primary: #60a5fa;
+  --ifm-color-primary-dark: #3b82f6;
+  --ifm-color-primary-darker: #2563eb;
+  --ifm-color-primary-darkest: #1d4ed8;
+  --ifm-color-primary-light: #93c5fd;
+  --ifm-color-primary-lighter: #bfdbfe;
+  --ifm-color-primary-lightest: #dbeafe;
+
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+
+  /* Better dark mode background */
+  --ifm-background-color: #1a1a2e;
+  --ifm-background-surface-color: #16213e;
+}
+
+/* Navigation bar */
+.navbar {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.navbar__title {
+  font-weight: 700;
+}
+
+/* Hero section on landing page */
+.hero {
+  padding: 4rem 0;
+}
+
+.hero__title {
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  opacity: 0.9;
+}
+
+/* Feature cards */
+.feature-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: var(--ifm-card-background-color);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Code blocks - better styling */
+.prism-code {
+  border-radius: 8px;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+th {
+  background: var(--ifm-table-head-background);
+  font-weight: 600;
+}
+
+/* Admonitions (tips, warnings, etc.) */
+.admonition {
+  border-radius: 8px;
+}
+
+/* Sidebar */
+.menu__link {
+  font-size: 0.95rem;
+}
+
+.menu__link--sublist-caret::after {
+  background-size: 1.2rem 1.2rem;
+}
+
+/* Footer */
+.footer {
+  background: var(--ifm-footer-background-color);
+}
+
+.footer__title {
+  font-weight: 600;
+}
+
+/* Mobile improvements */
+@media (max-width: 996px) {
+  .hero__title {
+    font-size: 2rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+/* Mermaid diagram styling */
+.docusaurus-mermaid-container {
+  margin: 1.5rem 0;
+}
+
+/* API endpoint styling */
+.api-method {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.api-method--get {
+  background: #22c55e;
+  color: white;
+}
+
+.api-method--post {
+  background: #3b82f6;
+  color: white;
+}
+
+.api-method--put {
+  background: #f59e0b;
+  color: white;
+}
+
+.api-method--delete {
+  background: #ef4444;
+  color: white;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge--pass {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge--fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+[data-theme="dark"] .status-badge--pass {
+  background: #166534;
+  color: #dcfce7;
+}
+
+[data-theme="dark"] .status-badge--fail {
+  background: #991b1b;
+  color: #fee2e2;
+}
+
+[data-theme="dark"] .status-badge--pending {
+  background: #92400e;
+  color: #fef3c7;
+}
