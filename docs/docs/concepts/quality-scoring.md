@@ -174,6 +174,6 @@ This enables:
 
 ## Next Steps
 
-- [Validation Profiles](./profiles) — Custom pass/fail rules
-- [Quick Start](../getting-started/quick-start) — Submit your first SBOM
+- [Validation Profiles](./profiles.md) — Custom pass/fail rules
+- [Quick Start](../getting-started/quick-start.md) — Submit your first SBOM
 - [sbomqs Documentation](https://github.com/interlynk-io/sbomqs) — Full sbomqs reference

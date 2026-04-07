@@ -312,5 +312,5 @@ All tests must pass before merge.
 
 ## Next Steps
 
-- [Contributing](./contributing) — Contribution guidelines
-- [Local Setup](./local-setup) — Development environment
+- [Contributing](./contributing.md) — Contribution guidelines
+- [Local Setup](./local-setup.md) — Development environment

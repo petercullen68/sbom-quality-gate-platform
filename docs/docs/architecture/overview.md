@@ -171,6 +171,6 @@ All database operations go through `IUnitOfWork`:
 
 ## Next Steps
 
-- [Domain Model](./domain-model) — Detailed entity documentation
-- [Worker Service](./worker-service) — Background processing details
-- [Extensibility](./extensibility) — Adding new validation tools
+- [Domain Model](./domain-model.md) — Detailed entity documentation
+- [Worker Service](./worker-service.md) — Background processing details
+- [Extensibility](./extensibility.md) — Adding new validation tools

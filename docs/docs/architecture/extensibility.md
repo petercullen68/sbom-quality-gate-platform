@@ -236,5 +236,5 @@ public class FakeValidationTool : IValidationTool
 
 ## Next Steps
 
-- [API Reference](../api) — Understand how jobs flow through the system
-- [CI/CD Integration](../integrations/ci-cd) — End-to-end pipeline setup
+- [API Reference](../api/index.md) — Understand how jobs flow through the system
+- [CI/CD Integration](../integrations/ci-cd.md) — End-to-end pipeline setup

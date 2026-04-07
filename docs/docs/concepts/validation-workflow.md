@@ -201,5 +201,5 @@ Total time from submission to result: **2-10 seconds** under normal load.
 
 ## Next Steps
 
-- [Quality Scoring](./quality-scoring) — Understanding the score
-- [Worker Service](../architecture/worker-service) — Deep dive into job processing
+- [Quality Scoring](./quality-scoring.md) — Understanding the score
+- [Worker Service](../architecture/worker-service.md) — Deep dive into job processing

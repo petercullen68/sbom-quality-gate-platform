@@ -115,5 +115,5 @@ Quality Gate would then focus on quality scoring, leaving vulnerability analysis
 
 ## Next Steps
 
-- [CI/CD Integration](./ci-cd) — Current integration patterns
-- [Extensibility](../architecture/extensibility) — Adding new tools
+- [CI/CD Integration](./ci-cd.md) — Current integration patterns
+- [Extensibility](../architecture/extensibility.md) — Adding new tools

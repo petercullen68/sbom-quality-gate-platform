@@ -189,5 +189,5 @@ OpenTelemetry integration is planned. Configuration will be documented here when
 
 ## Next Steps
 
-- [Architecture Overview](../architecture/overview) — Understand the system design
-- [API Reference](../api) — Explore the API endpoints
+- [Architecture Overview](../architecture/overview.md) — Understand the system design
+- [API Reference](../api/index.md) — Explore the API endpoints
