@@ -161,7 +161,7 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ### Adding a New Validation Tool
 
-See [Extensibility](../architecture/extensibility) for the `IValidationTool` pattern.
+See [Extensibility](../architecture/extensibility.md) for the `IValidationTool` pattern.
 
 ## Getting Help
 

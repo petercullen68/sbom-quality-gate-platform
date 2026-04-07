@@ -198,5 +198,5 @@ modelBuilder.Entity<SbomFeature>(entity =>
 
 ## Next Steps
 
-- [Worker Service](./worker-service) — How jobs are processed
-- [Extensibility](./extensibility) — Adding new validation tools
+- [Worker Service](./worker-service.md) — How jobs are processed
+- [Extensibility](./extensibility.md) — Adding new validation tools

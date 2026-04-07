@@ -76,6 +76,6 @@ Rate limiting is planned but not yet implemented.
 
 ## API Sections
 
-- [SBOMs](./sboms) — Submit and retrieve SBOMs
-- [Validation Jobs](./validation-jobs) — Job status and results
-- [Features](./features) — Feature discovery endpoint
+- [SBOMs](./sboms.md) — Submit and retrieve SBOMs
+- [Validation Jobs](./validation-jobs.md) — Job status and results
+- [Features](./features.md) — Feature discovery endpoint

@@ -127,6 +127,6 @@ Here's how you might integrate SBOM Quality Gate into a GitHub Actions workflow:
 
 ## Next Steps
 
-- [Configuration](./configuration) — Customize validation profiles and thresholds
-- [API Reference](../api) — Full API documentation
-- [CI/CD Integration](../integrations/ci-cd) — Detailed pipeline integration guide
+- [Configuration](./configuration.md) — Customize validation profiles and thresholds
+- [API Reference](../api/index.md) — Full API documentation
+- [CI/CD Integration](../integrations/ci-cd.md) — Detailed pipeline integration guide

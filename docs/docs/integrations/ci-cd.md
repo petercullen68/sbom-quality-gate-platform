@@ -338,5 +338,5 @@ exit 1
 
 ## Next Steps
 
-- [API Reference](../api) — Full API documentation
-- [Dependency-Track Integration](./dependency-track) — Vulnerability scanning
+- [API Reference](../api/index.md) — Full API documentation
+- [Dependency-Track Integration](./dependency-track.md) — Vulnerability scanning

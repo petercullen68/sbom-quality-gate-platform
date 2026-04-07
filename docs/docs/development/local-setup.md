@@ -280,5 +280,5 @@ SELECT id, team, project, version FROM "Sboms";
 
 ## Next Steps
 
-- [Testing](./testing) — Running and writing tests
-- [Contributing](./contributing) — Contribution guidelines
+- [Testing](./testing.md) — Running and writing tests
+- [Contributing](./contributing.md) — Contribution guidelines

@@ -135,9 +135,9 @@ This starts:
 - SBOM Quality Gate API
 - SBOM Quality Gate Worker
 
-See [Docker Deployment](./configuration#docker) for details.
+See [Docker Deployment](./configuration.md#docker) for details.
 
 ## Next Steps
 
-- [Quick Start](./quick-start) — Submit your first SBOM
-- [Configuration](./configuration) — Detailed configuration options
+- [Quick Start](./quick-start.md) — Submit your first SBOM
+- [Configuration](./configuration.md) — Detailed configuration options

@@ -140,6 +140,6 @@ dotnet CycloneDX ./MyProject.csproj -o sbom.json -j
 
 ## Next Steps
 
-- [Validation Workflow](./validation-workflow) — How SBOMs are processed
-- [Quality Scoring](./quality-scoring) — Understanding sbomqs scores
-- [Quick Start](../getting-started/quick-start) — Submit your first SBOM
+- [Validation Workflow](./validation-workflow.md) — How SBOMs are processed
+- [Quality Scoring](./quality-scoring.md) — Understanding sbomqs scores
+- [Quick Start](../getting-started/quick-start.md) — Submit your first SBOM

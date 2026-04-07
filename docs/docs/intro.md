@@ -49,9 +49,9 @@ SBOM Quality Gate acts as the single point of ingestion. You submit your SBOM on
 
 ## Quick Links
 
-- [Quick Start Guide](./getting-started/quick-start) — Get up and running in 5 minutes
-- [Architecture Overview](./architecture/overview) — Understand the system design
-- [API Reference](./api) — Integrate with your pipeline
+- [Quick Start Guide](./getting-started/quick-start.md) — Get up and running in 5 minutes
+- [Architecture Overview](./architecture/overview.md) — Understand the system design
+- [API Reference](./api/index.md) — Integrate with your pipeline
 
 ## License
 

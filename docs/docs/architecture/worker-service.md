@@ -250,5 +250,5 @@ The worker exposes health via job processing:
 
 ## Next Steps
 
-- [Extensibility](./extensibility) — Adding new validation tools
-- [API Reference](../api) — How jobs are created
+- [Extensibility](./extensibility.md) — Adding new validation tools
+- [API Reference](../api/index.md) — How jobs are created

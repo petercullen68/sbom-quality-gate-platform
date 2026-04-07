@@ -96,5 +96,5 @@ See the architecture documentation for implementation details.
 
 ## Next Steps
 
-- [Quality Scoring](./quality-scoring) — Understanding the current scoring
-- [Architecture Overview](../architecture/overview) — System design
+- [Quality Scoring](./quality-scoring.md) — Understanding the current scoring
+- [Architecture Overview](../architecture/overview.md) — System design

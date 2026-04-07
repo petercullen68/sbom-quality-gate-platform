@@ -18,7 +18,6 @@ const config: Config = {
   trailingSlash: false,
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
 
   i18n: {
     defaultLocale: "en",
@@ -89,7 +88,7 @@ const config: Config = {
           items: [
             {
               label: "Getting Started",
-              to: "/docs/getting-started/quick-start",
+              to: "/docs/getting-started/installation",
             },
             {
               label: "Architecture",
