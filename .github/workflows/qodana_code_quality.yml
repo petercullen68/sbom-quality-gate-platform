@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: # Specify your branches here
-      - main # The 'main' branch
-      - 'releases/*' # The release branches
+    branches:
+      - main
+      - 'releases/*'
 
 jobs:
   qodana:
@@ -15,15 +15,24 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
-          fetch-depth: 0  # a full history is required for pull request analysis
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup .NET SDK from global.json
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build solution
+        run: dotnet build SbomQualityGate.slnx --configuration Release
+
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2025.3
         with:
           pr-mode: false
-          args: --solution,SbomQualityGate.slnx,--configuration,Release,--no-build
+          args: --solution SbomQualityGate.slnx --configuration Release --no-build
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_711166548 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
