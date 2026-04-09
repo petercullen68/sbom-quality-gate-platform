@@ -29,4 +29,7 @@ jobs:
         with:
           pr-mode: false
           args: --solution SbomQualityGate.slnx --configuration Release
-        env
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_711166548 }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
+          DOTNET_ROOT: /usr/share/dotnet
