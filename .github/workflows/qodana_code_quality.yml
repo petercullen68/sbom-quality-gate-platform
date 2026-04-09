@@ -35,13 +35,12 @@ jobs:
       - name: Restore
         run: dotnet restore SbomQualityGate.slnx
 
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2025.3
-        
       - name: Build
         run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
-        
-      with:
+
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2025.3
+        with:
           pr-mode: false
           args: --linter jetbrains/qodana-cdnet:2025.3-eap --within-docker false --solution SbomQualityGate.slnx --configuration Release --no-build
         env:
