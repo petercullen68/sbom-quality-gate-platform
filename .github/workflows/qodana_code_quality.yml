@@ -37,9 +37,13 @@ jobs:
 
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2025.3
-        with:
+        
+      - name: Build
+        run: dotnet build SbomQualityGate.slnx --no-restore --configuration Release -warnaserror
+        
+      with:
           pr-mode: false
-          args: --linter jetbrains/qodana-cdnet:2025.3-eap --within-docker false --solution SbomQualityGate.slnx --configuration Release
+          args: --linter jetbrains/qodana-cdnet:2025.3-eap --within-docker false --solution SbomQualityGate.slnx --configuration Release --no-build
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_711166548 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
