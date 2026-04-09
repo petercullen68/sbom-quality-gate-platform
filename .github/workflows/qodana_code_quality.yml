@@ -18,17 +18,28 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-
       - name: Setup .NET SDK from global.json
         uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
+          cache: true
+          cache-dependency-path: |
+            global.json
+            Directory.Packages.props
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: Verify .NET info
+        run: dotnet --info
+
+      - name: Restore
+        run: dotnet restore SbomQualityGate.slnx
 
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2025.3
         with:
           pr-mode: false
-          args: --linter jetbrains/qodana-cdnet:2025.3-eap --within-docker=false --solution SbomQualityGate.slnx --configuration Release
+          args: --linter jetbrains/qodana-cdnet:2025.3-eap --within-docker false --solution SbomQualityGate.slnx --configuration Release
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_711166548 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
