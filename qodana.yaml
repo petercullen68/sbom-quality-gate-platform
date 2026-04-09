@@ -2,8 +2,5 @@ version: "1.0"
 linter: jetbrains/qodana-cdnet:2025.3-eap
 profile:
   name: qodana.recommended
-dotnet:
-  solution: SbomQualityGate.slnx
-  configuration: Release
 include:
   - name: CheckDependencyLicenses
