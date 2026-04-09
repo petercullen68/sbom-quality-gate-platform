@@ -4,5 +4,7 @@ profile:
   name: qodana.recommended
 dotnet:
   solution: SbomQualityGate.slnx
+  configuration: Release
+  no-build: true
 include:
   - name: CheckDependencyLicenses
