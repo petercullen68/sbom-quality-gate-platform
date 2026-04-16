@@ -10,7 +10,7 @@ SBOM Quality Gate follows a clean architecture pattern with clear separation bet
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Presentation Layer                            │
+│                       Presentation Layer                            │
 │  ┌─────────────────┐                      ┌──────────────────────┐  │
 │  │   API           │                      │   Worker Service     │  │
 │  │   (ASP.NET)     │                      │   (BackgroundService)│  │
@@ -19,25 +19,25 @@ SBOM Quality Gate follows a clean architecture pattern with clear separation bet
             │                                          │
             ▼                                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Application Layer                             │
+│                        Application Layer                            │
 │  ┌─────────────────────┐    ┌─────────────────────────────────────┐ │
-│  │ SubmitSbomHandler   │    │ ProcessNextValidationJobHandler    │ │
+│  │ SubmitSbomHandler   │    │ ProcessNextValidationJobHandler     │ │
 │  │ DiscoverFeatures... │    │                                     │ │
 │  └─────────────────────┘    └─────────────────────────────────────┘ │
-│                                                                      │
+│                                                                     │
 │  Interfaces: ISbomRepository, IValidationTool, IUnitOfWork, etc.    │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Domain Layer                                  │
+│                        Domain Layer                                 │
 │  Entities: Sbom, ValidationJob, ValidationResult, SbomFeature       │
-│  Enums: ValidationStatus, ValidationJobStatus                        │
+│  Enums: ValidationStatus, ValidationJobStatus                       │
 └─────────────────────────────────────────────────────────────────────┘
                                ▲
                                │
 ┌──────────────────────────────┴──────────────────────────────────────┐
-│                        Infrastructure Layer                          │
+│                        Infrastructure Layer                         │
 │  ┌────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
 │  │ Persistence    │  │ Validation    │  │ Process                 │ │
 │  │ (EF Core)      │  │ (sbomqs)      │  │ (CLI wrapper)           │ │

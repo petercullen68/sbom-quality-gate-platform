@@ -10,9 +10,9 @@ This page explains how an SBOM flows through the system from upload to validated
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                            SBOM Submission                                │
+│                            SBOM Submission                               │
 │                                                                          │
-│   Client ──POST /api/sboms──▶ API ──parse & validate──▶ Database        │
+│   Client ──POST /api/sboms──▶ API ──parse & validate──▶ Database         │
 │                                     │                                    │
 │                                     ├── Create Sbom entity               │
 │                                     ├── Create ValidationJob (Pending)   │
@@ -23,23 +23,23 @@ This page explains how an SBOM flows through the system from upload to validated
                                        │
                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                            Job Processing                                 │
+│                            Job Processing                                │
 │                                                                          │
-│   Worker ◀──LISTEN──▶ PostgreSQL                                        │
+│   Worker ◀──LISTEN──▶ PostgreSQL                                         │
 │      │                                                                   │
 │      ├── Claim job (SELECT FOR UPDATE SKIP LOCKED)                       │
 │      ├── Load SBOM from database                                         │
 │      ├── Write SBOM to temp file                                         │
 │      ├── Execute: sbomqs score /tmp/sbom.json --json                     │
 │      ├── Parse result, extract score                                     │
-│      ├── Create ValidationResult                                        │
+│      ├── Create ValidationResult                                         │
 │      └── Mark job Completed                                              │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                            Result Available                               │
+│                            Result Available                              │
 │                                                                          │
 │   ValidationResult:                                                      │
 │     - Status: Pass (score >= 80) or Fail (score < 80)                    │
