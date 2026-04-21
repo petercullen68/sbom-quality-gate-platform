@@ -2,6 +2,9 @@
   "name": "sbomqualitygate-docs",
   "version": "0.0.1",
   "private": true,
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
+  },
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
