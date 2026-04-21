@@ -20,7 +20,7 @@ public class SbomQsValidationTool(
             throw new InvalidOperationException("sbomqs temporarily unavailable (circuit open)");
         }
 
-        var tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetRandomFileName();
         await File.WriteAllTextAsync(tempFile, sbomJson, cancellationToken);
 
         try
