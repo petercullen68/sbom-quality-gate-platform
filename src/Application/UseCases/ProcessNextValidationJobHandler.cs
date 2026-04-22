@@ -88,6 +88,10 @@ public class ProcessNextValidationJobHandler(
             isSpecConformant = conformanceResult.Status;
             deprecationWarnings = [..conformanceResult.DeprecationWarnings];
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             await FailJobAsync(job, ex.Message, cancellationToken);
@@ -118,6 +122,10 @@ public class ProcessNextValidationJobHandler(
             }, cancellationToken);
 
             JobCompleted(logger, job.Id, null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

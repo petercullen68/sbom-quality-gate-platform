@@ -85,9 +85,6 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services
     .AddOptions<SpecSchemaOptions>()
     .Bind(builder.Configuration.GetSection(SpecSchemaOptions.SectionName))
-    .ValidateOnStart();builder.Services
-    .AddOptions<SpecSchemaOptions>()
-    .Bind(builder.Configuration.GetSection(SpecSchemaOptions.SectionName))
     .ValidateOnStart();
 
 // ------------------------------
@@ -140,7 +137,7 @@ builder.Services.AddHostedService<Worker>();
 var host = builder.Build();
 try
 {
-    host.Run();
+    await host.RunAsync();
 }
 catch (Exception ex)
 {
@@ -148,5 +145,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }
