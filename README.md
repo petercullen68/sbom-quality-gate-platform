@@ -255,3 +255,10 @@ POST /api/report/discover
 - Testability as a first-class concern
 - Hard reject early when data consistency is at risk
 - Incremental evolution over big rewrites
+
+---
+
+## Source Code Scanning
+The repository is scanned for secrets using gitleaks on every push and pull request. The scan covers the entire commit history to ensure no secrets are accidentally committed.
+Sonarqube is also configured for code quality analysis, with results visible in the SonarCloud dashboard. The project maintains a high code quality standard with no critical issues allowed.
+
