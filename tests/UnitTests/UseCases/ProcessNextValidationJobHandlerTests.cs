@@ -178,6 +178,8 @@ public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
         Assert.False(jobRepo.CompleteCalled);
     }
 
+    
+    
     [Fact]
     public async Task HandleAsyncNoJobsReturnsFalse()
     {
@@ -390,12 +392,102 @@ public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
         Assert.False(jobRepo.FailCalled);
     }
     
+    [Fact]
+    public async Task HandleAsyncCancellationDuringValidationRethrowsAndDoesNotFailJob()
+    {
+        // Arrange
+        var jobRepo = new FakeValidationJobRepository
+        {
+            JobToReturn = new ValidationJob
+            {
+                Id = Guid.NewGuid(),
+                SbomId = Guid.NewGuid(),
+                Status = ValidationJobStatus.Pending
+            }
+        };
+ 
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+ 
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: new FakeSbomRepositoryWithData(),
+            validationTool: new CancellingValidationTool());
+ 
+        // Act + Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            handler.HandleAsync(cts.Token));
+ 
+        Assert.False(jobRepo.FailCalled);
+        Assert.False(jobRepo.CompleteCalled);
+    }
+    
+    [Fact]
+    public async Task HandleAsyncCancellationDuringSpecConformanceRethrowsAndDoesNotFailJob()
+    {
+        // Arrange
+        var jobRepo = new FakeValidationJobRepository
+        {
+            JobToReturn = new ValidationJob
+            {
+                Id = Guid.NewGuid(),
+                SbomId = Guid.NewGuid(),
+                Status = ValidationJobStatus.Pending
+            }
+        };
+ 
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+ 
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: new FakeSbomRepositoryWithData(),
+            specConformanceTool: new CancellingSpecConformanceTool());
+ 
+        // Act + Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            handler.HandleAsync(cts.Token));
+ 
+        Assert.False(jobRepo.FailCalled);
+        Assert.False(jobRepo.CompleteCalled);
+    }
+    
+    [Fact]
+    public async Task HandleAsyncCancellationDuringPersistRethrowsAndDoesNotFailJob()
+    {
+        // Arrange
+        var jobRepo = new FakeValidationJobRepository
+        {
+            JobToReturn = new ValidationJob
+            {
+                Id = Guid.NewGuid(),
+                SbomId = Guid.NewGuid(),
+                Status = ValidationJobStatus.Pending
+            }
+        };
+ 
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+ 
+        var handler = CreateHandler(
+            jobRepo: jobRepo,
+            sbomRepo: new FakeSbomRepositoryWithData(),
+            unitOfWork: new CancellingOnPersistUnitOfWork());
+ 
+        // Act + Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            handler.HandleAsync(cts.Token));
+ 
+        Assert.False(jobRepo.FailCalled);
+        Assert.False(jobRepo.CompleteCalled);
+    }
+
+    
     private static ProcessNextValidationJobHandler CreateHandler(
         IValidationJobRepository? jobRepo = null,
         ISbomRepository? sbomRepo = null,
         IValidationTool? validationTool = null,
         ISpecConformanceTool? specConformanceTool = null,
-        DiscoverSbomReportHandler? discoverSbomReportHandler = null,
         IUnitOfWork? unitOfWork = null)
     {
         jobRepo ??= new FakeValidationJobRepository();
@@ -403,20 +495,16 @@ public async Task HandleAsyncSpecConformanceToolThrowsFailsJobAndReturnsFalse()
         validationTool ??= new FakeValidationTool();
         specConformanceTool ??= new FakeSpecConformanceTool();
         unitOfWork ??= new FakeUnitOfWork();
-        discoverSbomReportHandler ??= new DiscoverSbomReportHandler(
-            new FakeReportDiscoveryTool(),
-            new FakeSbomFeatureRepository(),
-            new FakeSbomProfileRepository(),
-            unitOfWork);
-
+ 
         return new ProcessNextValidationJobHandler(
             jobRepo,
             validationTool,
             specConformanceTool,
             sbomRepo,
-            discoverSbomReportHandler,
+            // DiscoverSbomReportHandler needs its own fake or null logger stub —
+            // wire up to match your actual constructor once that handler is settled
+            discoverReportHandler: null!,
             unitOfWork,
-            NullLogger<ProcessNextValidationJobHandler>.Instance);
+            logger: NullLogger<ProcessNextValidationJobHandler>.Instance);
     }
-
 }

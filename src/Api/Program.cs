@@ -234,7 +234,7 @@ app.MapControllers();
 
 try
 {
-    app.Run();
+    await app.RunAsync();
 }
 catch (HostAbortedException)
 {
@@ -246,5 +246,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }
